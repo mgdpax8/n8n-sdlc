@@ -8,6 +8,9 @@ tools/*.json
 !agents/.gitkeep
 !tools/.gitkeep
 
+# Example workflows (instance-specific, for reference only)
+example-workflows/
+
 # Workflow backups (generated during promotions)
 **/*.backup.*.json
 
