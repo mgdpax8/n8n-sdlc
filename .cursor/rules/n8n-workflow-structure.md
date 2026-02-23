@@ -10,7 +10,7 @@ An n8n workflow JSON file contains:
 {
   "name": "Workflow Name",           // TRANSFORM during promotion
   "nodes": [...],                    // Contains workflowId refs to TRANSFORM
-  "pinData": {...},                  // Test data, usually cleared
+  "pinData": {...},                  // Test data, strip for PROD
   "connections": {...},              // Node connections
   "active": true,                    // Whether workflow is active
   "settings": {...},                 // Workflow settings
@@ -21,18 +21,18 @@ An n8n workflow JSON file contains:
 }
 ```
 
-## Fields That Change During Promotion
+## Fields That Change During Promotion (DEV -> PROD)
 
 ### 1. `name` (Required Transformation)
 
-The workflow name must change from DEV to PROD prefix:
+Strip the DEV prefix to get the PROD name:
 
 ```json
 // Before (dev)
-"name": "DEV-BillingBot-InvoiceAgent"
+"name": "DEV-Support Agent"
 
-// After (prod)  
-"name": "PROD-BillingBot-InvoiceAgent"
+// After (prod)
+"name": "Support Agent"
 ```
 
 ### 2. `id` (Replace with Target ID)
@@ -56,7 +56,7 @@ When a workflow uses tool nodes (`@n8n/n8n-nodes-langchain.toolWorkflow`), they 
   "parameters": {
     "workflowId": {
       "__rl": true,
-      "value": "pnfqaPMDG9PohkBi",  // TRANSFORM: dev ID → prod ID
+      "value": "pnfqaPMDG9PohkBi",  // TRANSFORM: dev ID -> prod ID (in-project only)
       "mode": "id"                    // or "list" with different structure
     }
   },
@@ -66,6 +66,8 @@ When a workflow uses tool nodes (`@n8n/n8n-nodes-langchain.toolWorkflow`), they 
 ```
 
 **Search for**: `"type": "@n8n/n8n-nodes-langchain.toolWorkflow"` and `"type": "n8n-nodes-base.executeWorkflow"`
+
+**External dependency references** (IDs found in `externalDependencies` in id-mappings.json) are left untouched -- the same external workflow serves both DEV and PROD.
 
 ### 4. `nodes[].credentials` (Conditional Transformation)
 
@@ -82,17 +84,34 @@ Only transform if the credential is mapped in `config/project.json`:
 }
 ```
 
-### 5. `tags` (Optional Update)
+### 5. `pinData` (Strip for PROD)
+
+Always clear pinData when promoting to prevent test data leaking:
+
+```json
+"pinData": {}
+```
+
+### 6. `tags` (Optional Update)
 
 Update tags to reflect environment:
 
 ```json
 // Before
-"tags": [{"name": "environment:dev"}, {"name": "project:billingbot"}]
+"tags": [{"name": "environment:dev"}]
 
-// After  
-"tags": [{"name": "environment:prod"}, {"name": "project:billingbot"}]
+// After
+"tags": [{"name": "environment:prod"}]
 ```
+
+## Fields That Change During Seed DEV (PROD -> DEV)
+
+The reverse of promotion:
+
+1. **`name`**: Prepend dev prefix (`Support Agent` -> `DEV-Support Agent`)
+2. **`id`**: Replace with DEV slot ID
+3. **`workflowId` references**: PROD IDs -> DEV IDs (in-project only; external refs untouched)
+4. **Credentials**: PROD -> DEV (if mapped)
 
 ## Fields That Stay the Same
 
@@ -116,7 +135,7 @@ Used in AI agent workflows to call tool workflows:
     "description": "Tool description",
     "workflowId": {
       "__rl": true,
-      "value": "pnfqaPMDG9PohkBi",  // ← TRANSFORM THIS
+      "value": "pnfqaPMDG9PohkBi",  // TRANSFORM THIS (if in-project)
       "mode": "id"
     },
     "workflowInputs": {...}
@@ -137,7 +156,7 @@ Standard node to call sub-workflows:
   "parameters": {
     "workflowId": {
       "__rl": true,
-      "value": "pnfqaPMDG9PohkBi",  // ← TRANSFORM THIS
+      "value": "pnfqaPMDG9PohkBi",  // TRANSFORM THIS (if in-project)
       "mode": "id"
     }
   },
@@ -157,12 +176,12 @@ Sometimes workflows are selected by name in the UI, using "list" mode:
     "value": "pnfqaPMDG9PohkBi",       // Still the ID
     "mode": "list",
     "cachedResultUrl": "/workflow/pnfqaPMDG9PohkBi",
-    "cachedResultName": "aito-billingbot — List Invoices"
+    "cachedResultName": "List Invoices"
   }
 }
 ```
 
-**Note**: The `value` field still contains the ID that needs transformation.
+**Note**: The `value` field still contains the ID that needs transformation (if in-project). Strip `cachedResultUrl` and `cachedResultName` during promotion (n8n will re-populate).
 
 ## Credential Reference Structure
 
@@ -170,7 +189,7 @@ Sometimes workflows are selected by name in the UI, using "list" mode:
 {
   "credentials": {
     "credentialType": {
-      "id": "credentialId",    // ← TRANSFORM if mapped
+      "id": "credentialId",    // TRANSFORM if mapped in project.json
       "name": "Credential Name"
     }
   }
@@ -199,47 +218,84 @@ To find all workflow references that need transformation:
 
 3. **Extract all `workflowId.value` fields from these nodes**
 
-4. **Look up each ID in `id-mappings.json`**
+4. **For each ID, classify it**:
+   - Found as a `dev.id` in id-mappings.json workflows -> **in-project, transform**
+   - Found in `externalDependencies` -> **external, leave untouched**
+   - Not found anywhere -> **ERROR: unmapped reference, STOP**
 
-5. **If any ID is not mapped, STOP promotion**
+5. **If any in-project ID lacks a target mapping, STOP promotion**
 
-## Transformation Algorithm
+## Transformation Algorithm (DEV -> PROD Promotion)
 
 ```
-1. Load workflow JSON
-2. Read id-mappings.json
+1. Load DEV workflow JSON
+2. Read id-mappings.json and project.json
 
 3. Transform workflow name:
-   - Replace DEV prefix with PROD prefix
-   
-4. Transform workflow ID:
-   - Replace with target prod workflow ID
+   - Strip devPrefix ("DEV-Support Agent" -> "Support Agent")
 
-5. For each node in nodes[]:
+4. Transform workflow ID:
+   - Replace with target prod workflow ID from id-mappings
+
+5. Strip pinData:
+   - Set pinData = {}
+
+6. For each node in nodes[]:
    - If type is toolWorkflow or executeWorkflow:
      - Get workflowId.value
-     - Look up in id-mappings.json by dev ID
-     - If not found: ERROR - unmapped reference
-     - Replace value with prod ID
-     
-6. For each credential reference:
+     - Check if ID is in externalDependencies -> SKIP (leave as-is)
+     - Look up in id-mappings.json workflows by dev.id
+     - If not found and not external: ERROR - unmapped reference
+     - If found: replace value with prod.id
+     - Strip cachedResultUrl and cachedResultName
+
+7. For each credential reference:
    - Check if credential alias is in project.json mappings
    - If mapped: replace ID with prod credential ID
    - If not mapped: leave as-is (same in both environments)
 
-7. Update tags (if configured):
-   - Replace dev tag with prod tag
+8. Update tags (if configured):
+   - Replace dev tags with prod tags
+
+9. Return transformed JSON
+```
+
+## Reverse Transformation Algorithm (PROD -> DEV Seed)
+
+```
+1. Load PROD workflow JSON
+2. Read id-mappings.json and project.json
+
+3. Transform workflow name:
+   - Prepend devPrefix ("Support Agent" -> "DEV-Support Agent")
+
+4. Transform workflow ID:
+   - Replace with target dev workflow ID from id-mappings
+
+5. For each node in nodes[]:
+   - If type is toolWorkflow or executeWorkflow:
+     - Get workflowId.value
+     - Check if ID is in externalDependencies -> SKIP (leave as-is)
+     - Look up in id-mappings.json workflows by prod.id
+     - If found: replace value with dev.id
+     - If not found and not external: WARN (reference may be unmanaged)
+
+6. For each credential reference:
+   - If mapped in project.json: replace prod ID with dev ID
+   - If not mapped: leave as-is
+
+7. Update tags (if configured)
 
 8. Return transformed JSON
 ```
 
-## Example: Complete Transformation
+## Example: Complete Promotion Transformation
 
 ### Before (Dev)
 
 ```json
 {
-  "name": "DEV-BillingBot-InvoiceAgent",
+  "name": "DEV-Support Agent",
   "id": "YbM4pqxRD0AnOVhb",
   "nodes": [
     {
@@ -256,6 +312,15 @@ To find all workflow references that need transformation:
           "name": "aitobillbot-mongodb"
         }
       }
+    },
+    {
+      "type": "n8n-nodes-base.executeWorkflow",
+      "name": "Shared Lookup",
+      "parameters": {
+        "workflowId": {
+          "value": "extWorkflowId123"
+        }
+      }
     }
   ]
 }
@@ -265,21 +330,31 @@ To find all workflow references that need transformation:
 
 ```json
 {
-  "name": "PROD-BillingBot-InvoiceAgent",
+  "name": "Support Agent",
   "id": "XyZ789ProdId",
+  "pinData": {},
   "nodes": [
     {
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "name": "List Invoices",
       "parameters": {
         "workflowId": {
-          "value": "AbC456ProdToolId"  // Transformed
+          "value": "AbC456ProdToolId"
         }
       },
       "credentials": {
         "mongoDb": {
-          "id": "Ggo0MKdauxTlpDyQ",  // Not transformed (same in both envs)
+          "id": "Ggo0MKdauxTlpDyQ",
           "name": "aitobillbot-mongodb"
+        }
+      }
+    },
+    {
+      "type": "n8n-nodes-base.executeWorkflow",
+      "name": "Shared Lookup",
+      "parameters": {
+        "workflowId": {
+          "value": "extWorkflowId123"
         }
       }
     }
@@ -287,11 +362,14 @@ To find all workflow references that need transformation:
 }
 ```
 
+Note: `List Invoices` workflowId was transformed (in-project). `Shared Lookup` workflowId was left untouched (external dependency).
+
 ## Validation Checklist
 
 Before promoting, verify:
 
-- [ ] All `workflowId` values have entries in id-mappings.json
-- [ ] All entries have non-null `prod.id` values
+- [ ] All in-project `workflowId` values have entries in id-mappings.json
+- [ ] All in-project entries have non-null `prod.id` values
+- [ ] External dependency references are recorded in `externalDependencies`
 - [ ] Credential mappings exist for any environment-specific credentials
-- [ ] Workflow name follows correct pattern for transformation
+- [ ] pinData will be stripped

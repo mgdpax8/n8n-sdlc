@@ -37,10 +37,10 @@ What workflows do you need to create?
 
 For each workflow, you'll need TWO slots (one dev, one prod).
 
-Please list the workflow names (without DEV/PROD prefix):
-1. InvoiceAgent
-2. ListInvoices
-3. GetInvoiceTotals
+Please list the workflow names (these will be the production names, e.g., 'Support Agent', 'List Invoices'):
+1. Support Agent
+2. List Invoices
+3. Get Invoice Totals
 ```
 
 ### Step 2: Calculate Total Slots
@@ -110,24 +110,30 @@ Now let's assign these slots to your workflows.
 
 For each workflow, I need a DEV slot and a PROD slot:
 
-Workflow: InvoiceAgent
+Workflow: Support Agent
   - DEV slot: [User selects from list, e.g., "1"]
   - PROD slot: [User selects from list, e.g., "2"]
 
-Workflow: ListInvoices
+Workflow: List Invoices
   - DEV slot: [User selects, e.g., "3"]
   - PROD slot: [User selects, e.g., "4"]
 ```
 
 ### Step 8: Update id-mappings.json
 
-Add entries for each claimed workflow:
+Add entries for each claimed workflow. Include `localPath`:
+- Default to `"agents/"` for AI workflows (type: agent)
+- Default to `"tools/"` for others (type: tool)
+- If the project has `folderStrategy.mode: "categorized"`, use the appropriate path for that strategy (e.g., nested paths)
+
+Read `config/project.json` to get `naming.devPrefix` and `folderStrategy` (if present).
 
 ```json
 {
   "workflows": {
-    "InvoiceAgent": {
+    "Support Agent": {
       "type": "agent",
+      "localPath": "agents/",
       "dev": {
         "id": "abc123",
         "status": "reserved"
@@ -137,8 +143,9 @@ Add entries for each claimed workflow:
         "status": "reserved"
       }
     },
-    "ListInvoices": {
+    "List Invoices": {
       "type": "tool",
+      "localPath": "tools/",
       "dev": {
         "id": "ghi789",
         "status": "reserved"
@@ -154,21 +161,18 @@ Add entries for each claimed workflow:
 
 ### Step 9: Rename Workflows in n8n (Optional but Recommended)
 
-Use MCP to update each workflow's name to follow conventions:
+Use MCP to update workflow names:
 
-```
-For each claimed slot:
-  - DEV slot: Rename to "DEV-{ProjectName}-{WorkflowName}"
-  - PROD slot: Rename to "PROD-{ProjectName}-{WorkflowName}"
-```
+- **DEV slots only**: Rename to `"{devPrefix}{WorkflowName}"` (e.g., `"DEV-Support Agent"`). Get `devPrefix` from `config/project.json` → `naming.devPrefix` (default `"DEV-"`).
+- **PROD slots**: Keep whatever name the user gave them in n8n. If the user named a slot "Slot 2" but it's claimed as "Support Agent", optionally rename it to "Support Agent" so it matches the logical name.
 
 **Example MCP operation:**
 ```
-Update workflow abc123:
-  - name: "DEV-BillingBot-InvoiceAgent"
+Update workflow abc123 (DEV slot):
+  - name: "DEV-Support Agent"
   
-Update workflow def456:
-  - name: "PROD-BillingBot-InvoiceAgent"
+Update workflow def456 (PROD slot):
+  - name: "Support Agent"   (only if it was named something else like "Slot 2")
 ```
 
 ### Step 10: Confirm Completion
@@ -182,11 +186,11 @@ Summary:
 ┌─────────────────┬──────────────────────────────────────┬──────────────────────────────────────┐
 │ Workflow        │ DEV ID                               │ PROD ID                              │
 ├─────────────────┼──────────────────────────────────────┼──────────────────────────────────────┤
-│ InvoiceAgent    │ abc123                               │ def456                               │
-│ ListInvoices    │ ghi789                               │ jkl012                               │
+│ Support Agent   │ abc123                               │ def456                               │
+│ List Invoices   │ ghi789                               │ jkl012                               │
 └─────────────────┴──────────────────────────────────────┴──────────────────────────────────────┘
 
-The workflows have been renamed in n8n to follow the naming convention.
+The DEV workflows have been renamed in n8n (prefixed with {devPrefix}). PROD workflows keep their names.
 
 Next steps:
 1. Build your workflows in the DEV slots
@@ -200,8 +204,8 @@ If the user has existing workflows they want to import:
 1. Ask for the workflow names/IDs
 2. Pull each workflow
 3. Verify they're in the correct folder
-4. Add them to id-mappings.json with appropriate status
-5. Optionally rename to follow conventions
+4. Add them to id-mappings.json with appropriate status and localPath
+5. Optionally rename DEV copies to follow conventions (prepend devPrefix)
 
 ## Error Handling
 

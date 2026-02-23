@@ -16,7 +16,7 @@ Promote a DEV workflow to PROD with full ID transformation.
 ## Critical Safety Rules
 
 1. **Always require explicit confirmation** before pushing to PROD
-2. **All referenced workflows must have PROD IDs** mapped
+2. **All referenced in-project workflows must have PROD IDs** mapped
 3. **Backup current PROD** before overwriting
 4. **Log all transformations** for audit trail
 
@@ -26,25 +26,40 @@ Promote a DEV workflow to PROD with full ID transformation.
 - `config/id-mappings.json` must exist
 - DEV workflow must exist (locally or in n8n)
 - PROD slot must be reserved (prod.id is not null)
-- All referenced workflows must have PROD mappings
+- All referenced in-project workflows must have PROD mappings
 
 ## Steps
 
 ### Step 1: Identify the Workflow to Promote
 
 Accept workflow by:
-- **Logical name**: "Invoice Agent"
-- **Full DEV name**: "DEV-BillingBot-InvoiceAgent"
-- **Local file path**: `agents/DEV-BillingBot-InvoiceAgent.json`
+- **Logical name** (id-mappings key): "Support Agent"
+- **Full DEV name**: "DEV-Support Agent" (devPrefix + name from `config/project.json` `naming.devPrefix`)
+- **Local file path**: resolved via `localPath` from id-mappings (see Step 2)
 
 ### Step 2: Load Source Workflow
 
-**If local file exists:**
+**Resolve local file path:**
 ```
-Read from: agents/DEV-{Project}-{Name}.json
+1. Look up workflow in id-mappings.json by logical name (key = PROD/real name, e.g., "Support Agent")
+2. Get localPath from the workflow entry (e.g., "agents/", "tools/")
+3. DEV file path = {localPath}{devPrefix}{logicalName}.json
+   Example: agents/DEV-Support Agent.json
+   (devPrefix from config/project.json naming.devPrefix)
 ```
 
-**If no local file:**
+**If local file exists at resolved path:**
+```
+Read from: {localPath}{devPrefix}{logicalName}.json
+```
+
+**If file not found at localPath (self-healing):**
+```
+Search workspace by filename (e.g., "DEV-Support Agent.json")
+If found elsewhere, use that path and optionally suggest updating localPath in id-mappings
+```
+
+**If no local file found:**
 ```
 Pull from n8n using DEV ID from id-mappings.json
 ```
@@ -55,10 +70,12 @@ Check `config/id-mappings.json`:
 
 ```json
 {
-  "InvoiceAgent": {
+  "Support Agent": {
+    "type": "agent",
+    "localPath": "agents/",
     "prod": {
-      "id": "xyz789ProdId",  // Must NOT be null
-      "status": "reserved"  // or "active"
+      "id": "xyz789ProdId",
+      "status": "reserved"
     }
   }
 }
@@ -66,7 +83,7 @@ Check `config/id-mappings.json`:
 
 **If prod.id is null:**
 ```
-ERROR: No PROD slot reserved for "Invoice Agent"
+ERROR: No PROD slot reserved for "Support Agent"
 
 To promote this workflow, you first need to reserve a PROD slot.
 Run the "reserve-workflows" skill to create and claim a PROD slot.
@@ -84,31 +101,45 @@ Search nodes for:
 Extract each workflowId.value
 ```
 
-### Step 5: Verify All References Have PROD Mappings
+### Step 5: Verify All References Are Mapped
 
 For each found workflow ID:
 
 ```
-1. Look up the ID in id-mappings.json (search all entries' dev.id)
-2. Find the corresponding entry
-3. Check if prod.id is not null
+1. Check if the ID exists in id-mappings.json workflows (search all entries' dev.id)
+   → If found: in-project reference; verify prod.id is not null
+2. Check if the ID exists in id-mappings.json externalDependencies (search by id)
+   → If found: external reference; leave untouched (same ID for DEV and PROD)
+3. If NOT found in workflows OR externalDependencies:
+   → ERROR: unmapped reference
 ```
 
-**If any reference lacks a PROD mapping:**
+**If any in-project reference lacks a PROD mapping:**
 ```
 ERROR: Cannot promote - missing PROD mappings
 
 The following workflow references need PROD IDs:
 
-| DEV ID          | Workflow Name  | PROD ID |
-|-----------------|----------------|---------|
-| pnfqaPMDG9PohkBi| List Invoices  | NULL ❌ |
-| abc123          | Get Totals     | NULL ❌ |
+| DEV ID          | Workflow Name   | PROD ID |
+|-----------------|-----------------|---------|
+| pnfqaPMDG9PohkBi| List Invoices   | NULL ❌ |
+| abc123          | Get Totals      | NULL ❌ |
 
 Run "reserve-workflows" to create PROD slots for these workflows first.
 ```
 
-**STOP promotion if any mapping is missing.**
+**If any reference is unmapped (not in workflows or externalDependencies):**
+```
+ERROR: Unmapped workflow reference
+
+The workflow references workflow ID "unknown-id-123" which is not in:
+- workflows (in-project)
+- externalDependencies (external)
+
+Add this workflow to id-mappings.json before promoting.
+```
+
+**STOP promotion if any mapping is missing or unmapped.**
 
 ### Step 6: Build Transformation Report
 
@@ -119,26 +150,26 @@ Create a detailed report of what will change:
                     PROMOTION TRANSFORMATION REPORT
 ═══════════════════════════════════════════════════════════════════
 
-Workflow: Invoice Agent
-Source: DEV-BillingBot-InvoiceAgent (ID: abc123)
-Target: PROD-BillingBot-InvoiceAgent (ID: xyz789)
+Workflow: Support Agent
+Source: DEV-Support Agent (ID: abc123)
+Target: Support Agent (ID: xyz789)
 
 TRANSFORMATIONS:
 ───────────────────────────────────────────────────────────────────
 1. Workflow Name
-   DEV-BillingBot-InvoiceAgent → PROD-BillingBot-InvoiceAgent
+   DEV-Support Agent → Support Agent (strip devPrefix)
 
 2. Workflow ID  
    abc123 → xyz789
 
 3. Tool References (3 found):
-   ┌─────────────────────┬─────────────────┬─────────────────┐
-   │ Tool Name           │ DEV ID          │ PROD ID         │
-   ├─────────────────────┼─────────────────┼─────────────────┤
-   │ List Invoices       │ pnfqaPMDG9PohkBi│ prodListId123   │
-   │ Get Invoice Totals  │ tool123abc      │ prodTotalsId456 │
-   │ Invoice Diff        │ diff789xyz      │ prodDiffId789   │
-   └─────────────────────┴─────────────────┴─────────────────┘
+   ┌─────────────────────┬─────────────────┬─────────────────┬──────────────┐
+   │ Tool Name           │ DEV ID          │ PROD ID         │ Type         │
+   ├─────────────────────┼─────────────────┼─────────────────┼──────────────┤
+   │ List Invoices       │ pnfqaPMDG9PohkBi│ prodListId123   │ in-project   │
+   │ Get Invoice Totals  │ tool123abc      │ prodTotalsId456 │ in-project   │
+   │ Shared Lookup       │ ext-workflow-id │ (unchanged)     │ external     │
+   └─────────────────────┴─────────────────┴─────────────────┴──────────────┘
 
 4. Credential Mappings (1 found):
    ┌─────────────────────┬─────────────────┬─────────────────┐
@@ -160,7 +191,7 @@ You are about to deploy to PRODUCTION.
 This will:
 1. Backup current PROD workflow
 2. Apply the transformations shown above
-3. Push to PROD-BillingBot-InvoiceAgent
+3. Push to Support Agent
 
 Type "confirm" to proceed, or anything else to cancel.
 ```
@@ -171,7 +202,8 @@ Type "confirm" to proceed, or anything else to cancel.
 
 ```
 1. Pull current PROD workflow from n8n
-2. Save to: agents/PROD-BillingBot-InvoiceAgent.backup.{timestamp}.json
+2. Save to: {localPath}{logicalName}.backup.{timestamp}.json
+   Example: agents/Support Agent.backup.2026-02-05T17-00-00.json
 3. Log backup location
 ```
 
@@ -183,8 +215,11 @@ Execute the transformation algorithm:
 // 1. Clone the DEV workflow
 prodWorkflow = deepClone(devWorkflow)
 
-// 2. Transform workflow name
-prodWorkflow.name = devWorkflow.name.replace("DEV-", "PROD-")
+// 2. Transform workflow name: strip devPrefix (not replace with PROD-)
+devPrefix = projectJson.naming.devPrefix  // e.g., "DEV-"
+prodWorkflow.name = devWorkflow.name.startsWith(devPrefix)
+  ? devWorkflow.name.slice(devPrefix.length)
+  : devWorkflow.name
 
 // 3. Transform workflow ID
 prodWorkflow.id = idMappings[logicalName].prod.id
@@ -192,11 +227,18 @@ prodWorkflow.id = idMappings[logicalName].prod.id
 // 4. Strip pinData (prevent test data leaking to PROD)
 prodWorkflow.pinData = {}
 
-// 5. Transform all workflowId references
+// 5. Transform workflowId references (in-project only; external refs unchanged)
 for (node of prodWorkflow.nodes) {
   if (isWorkflowReferenceNode(node)) {
-    devRefId = node.parameters.workflowId.value
-    mappingEntry = findMappingByDevId(devRefId)
+    refId = node.parameters.workflowId.value
+
+    // Check if external dependency - leave untouched
+    if (isInExternalDependencies(refId)) {
+      continue  // same ID serves both DEV and PROD
+    }
+
+    // In-project: transform to PROD ID
+    mappingEntry = findMappingByDevId(refId)
     node.parameters.workflowId.value = mappingEntry.prod.id
 
     // Strip cached list-mode metadata (n8n will re-populate)
@@ -297,15 +339,17 @@ Update `config/id-mappings.json`:
 
 ```json
 {
-  "InvoiceAgent": {
+  "Support Agent": {
+    "type": "agent",
+    "localPath": "agents/",
     "prod": {
       "id": "xyz789",
-      "status": "active"  // Update from "reserved"
+      "status": "active"
     },
     "audit": {
       "lastPromoted": "2026-02-05T17:00:00Z",
       "promotionCount": 1,
-      "lastPromotionBackup": "agents/PROD-BillingBot-InvoiceAgent.backup.2026-02-05T17-00-00.json"
+      "lastPromotionBackup": "agents/Support Agent.backup.2026-02-05T17-00-00.json"
     }
   }
 }
@@ -333,19 +377,20 @@ To make it live, you must activate/publish it manually in the n8n UI.
 ```
 ✅ PROMOTION SUCCESSFUL
 
-Workflow: Invoice Agent
-Source: DEV-BillingBot-InvoiceAgent
-Target: PROD-BillingBot-InvoiceAgent
+Workflow: Support Agent
+Source: DEV-Support Agent
+Target: Support Agent
 
 Transformations Applied:
-- Workflow name: ✓
+- Workflow name: ✓ (stripped devPrefix)
 - Workflow ID: ✓
 - pinData stripped: ✓
 - cachedResult metadata stripped: ✓
-- 3 tool references: ✓
+- 2 in-project tool references: ✓
+- 1 external reference (unchanged): ✓
 - 1 credential mapping: ✓
 
-Backup saved: agents/PROD-BillingBot-InvoiceAgent.backup.2026-02-05T17-00-00.json
+Backup saved: agents/Support Agent.backup.2026-02-05T17-00-00.json
 
 ⚠️ Please verify the workflow is working correctly in n8n.
    Test key functionality before considering promotion complete.
@@ -356,7 +401,7 @@ Backup saved: agents/PROD-BillingBot-InvoiceAgent.backup.2026-02-05T17-00-00.jso
 Support `--dry-run` flag to preview without executing:
 
 ```
-User: "promote Invoice Agent --dry-run"
+User: "promote Support Agent --dry-run"
 
 Response: Shows full transformation report WITHOUT pushing to PROD
 ```
@@ -366,7 +411,8 @@ Response: Shows full transformation report WITHOUT pushing to PROD
 | Error | Resolution |
 |-------|------------|
 | PROD slot not reserved | Run reserve-workflows first |
-| Missing tool PROD mapping | Reserve PROD slots for all tools first |
+| Missing in-project PROD mapping | Reserve PROD slots for all referenced workflows first |
+| Unmapped workflow reference | Add to workflows or externalDependencies in id-mappings.json |
 | User didn't confirm | Operation cancelled; no changes made |
 | MCP push failed | Retry or investigate; backup is safe |
 | Transformation error | Log error; do not push partial result |
@@ -376,7 +422,8 @@ Response: Shows full transformation report WITHOUT pushing to PROD
 Before promoting, verify:
 
 - [ ] DEV workflow is tested and working
-- [ ] All referenced tool workflows have PROD mappings
+- [ ] All referenced in-project workflows have PROD mappings
+- [ ] External references are listed in externalDependencies
 - [ ] PROD slot is reserved for this workflow
 - [ ] Credential mappings exist (if different per env)
 - [ ] User has confirmed the transformation report
@@ -386,7 +433,8 @@ Before promoting, verify:
 If promotion causes issues:
 
 ```
-1. Locate backup file: agents/PROD-*.backup.{timestamp}.json
+1. Locate backup file: {localPath}{workflowName}.backup.{timestamp}.json
+   Example: agents/Support Agent.backup.2026-02-05T17-00-00.json
 2. Use push-workflow skill to push backup to PROD
 3. Verify PROD is restored
 ```

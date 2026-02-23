@@ -20,13 +20,14 @@ Restore a workflow to a previous version using n8n's built-in version history.
 ### Step 1: Identify the Workflow to Rollback
 
 Accept workflow by:
-- **Logical name**: "Invoice Agent"
-- **Full name**: "PROD-BillingBot-InvoiceAgent"
+- **Logical name**: "Support Agent" (PROD name = id-mappings key)
+- **Full PROD name**: "Support Agent" (same as logical name)
+- **Full DEV name**: "DEV-Support Agent"
 - **n8n ID**: "xyz789ProdId"
 
 ### Step 2: Resolve the Workflow ID
 
-Look up the ID in id-mappings.json based on the name and environment.
+Look up the ID in id-mappings.json by PROD name (the key). Use the `prod.id` for production rollback.
 
 ### Step 3: List Version History
 
@@ -41,7 +42,7 @@ Parameters:
 Present the version list to the user:
 
 ```
-Version history for PROD-BillingBot-InvoiceAgent:
+Version history for Support Agent:
 
 | # | Version ID | Date | Description |
 |---|-----------|------|-------------|
@@ -60,7 +61,7 @@ Which version do you want to rollback to?
 
 You are about to rollback:
 
-  Workflow: PROD-BillingBot-InvoiceAgent
+  Workflow: Support Agent
   Target ID: xyz789ProdId
   Rolling back to: Version v-abc123 (2026-02-23 18:30)
 
@@ -111,7 +112,7 @@ Update `config/id-mappings.json`:
 ```
 ✅ ROLLBACK SUCCESSFUL
 
-Workflow: PROD-BillingBot-InvoiceAgent
+Workflow: Support Agent
 Rolled back to: Version v-abc123 (2026-02-23 18:30)
 Previous version backed up by n8n automatically.
 

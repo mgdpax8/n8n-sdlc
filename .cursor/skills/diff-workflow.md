@@ -20,15 +20,29 @@ Compare local workflow JSON against the remote version in n8n to detect drift.
 ### Step 1: Identify the Workflow
 
 Accept workflow by:
-- **Local file path**: `agents/DEV-BillingBot-InvoiceAgent.json`
-- **Logical name + environment**: "Invoice Agent" (dev or prod)
-- **Full workflow name**: "DEV-BillingBot-InvoiceAgent"
+- **Local file path**: Resolve via id-mappings (see Step 2)
+- **Logical name + environment**: "Support Agent" (dev or prod)
+- **Full workflow name**: PROD = "Support Agent", DEV = "DEV-Support Agent"
 
-### Step 2: Load Local Version
+Logical name = PROD name = id-mappings key.
 
-Read the local workflow JSON file.
+### Step 2: Resolve Local File Path
 
-### Step 3: Fetch Remote Version
+1. Look up the workflow in `config/id-mappings.json` by PROD name (the key).
+2. Use `localPath` from the workflow mapping for file resolution.
+3. File name convention: PROD = `{name}.json`, DEV = `DEV-{name}.json`
+4. Full path: `{localPath}/{DEV-Support Agent}.json` (e.g., `agents/DEV-Support Agent.json`)
+
+**Self-healing**: If the file is not found at the expected path:
+- Check if the file exists elsewhere under the project (e.g., moved to a different folder)
+- If found, update `localPath` in id-mappings.json to the correct folder
+- If not found, prompt user to pull the workflow first
+
+### Step 3: Load Local Version
+
+Read the local workflow JSON file at the resolved path.
+
+### Step 4: Fetch Remote Version
 
 ```
 MCP Tool: n8n_get_workflow
@@ -37,7 +51,7 @@ Parameters:
   - mode: "full"
 ```
 
-### Step 4: Version Check
+### Step 5: Version Check
 
 Compare `versionId` values:
 
@@ -49,7 +63,7 @@ If they match: No remote changes since last sync.
 If they differ: Remote has been modified.
 ```
 
-### Step 5: Compare Key Fields
+### Step 6: Compare Key Fields
 
 Compare the following fields between local and remote:
 
@@ -61,7 +75,7 @@ Compare the following fields between local and remote:
 | versionId | | | |
 | versionCounter | N/A | {value} | |
 
-### Step 6: Detailed Node Comparison
+### Step 7: Detailed Node Comparison
 
 For each node, compare:
 - Node exists in both versions
@@ -71,7 +85,7 @@ For each node, compare:
 
 Report:
 ```
-DIFF REPORT: DEV-BillingBot-InvoiceAgent
+DIFF REPORT: DEV-Support Agent
 ═══════════════════════════════════════════
 
 Version Status:
@@ -94,7 +108,7 @@ Recommendation:
   - If both have changes: Pull first, merge manually, then push
 ```
 
-### Step 7: Provide Recommendation
+### Step 8: Provide Recommendation
 
 Based on the diff:
 - **No changes**: "Local and remote are in sync."
@@ -106,7 +120,7 @@ Based on the diff:
 
 | Error | Resolution |
 |-------|------------|
-| Local file not found | Pull the workflow first |
+| Local file not found | Self-heal: search for file elsewhere; if found, update localPath in id-mappings. If not found, pull the workflow first |
 | Workflow not in n8n | Check if ID is correct in id-mappings.json |
 | No lastVersionId in audit | Cannot do version check; compare node-by-node instead |
 

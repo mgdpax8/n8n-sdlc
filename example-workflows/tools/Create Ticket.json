@@ -1,0 +1,135 @@
+{
+  "name": "DEV-Create Ticket",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "customerId"
+            },
+            {
+              "name": "subject"
+            },
+            {
+              "name": "description"
+            },
+            {
+              "name": "priority"
+            }
+          ]
+        }
+      },
+      "id": "c1b2c3d4-3333-4000-a000-000000000001",
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [200, 340]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.example.com/tickets",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"customerId\": \"{{ $json.customerId }}\",\n  \"subject\": \"{{ $json.subject }}\",\n  \"description\": \"{{ $json.description }}\",\n  \"priority\": \"{{ $json.priority || 'medium' }}\"\n}",
+        "options": {}
+      },
+      "id": "c1b2c3d4-3333-4000-a000-000000000002",
+      "name": "Create Ticket API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 340],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "exCredApiKey001",
+          "name": "CRM API Key - Example"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ticket-resp-001",
+              "name": "ticketId",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "ticket-resp-002",
+              "name": "status",
+              "value": "={{ $json.status }}",
+              "type": "string"
+            },
+            {
+              "id": "ticket-resp-003",
+              "name": "message",
+              "value": "=Ticket {{ $json.id }} created successfully",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c1b2c3d4-3333-4000-a000-000000000003",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [680, 340]
+    }
+  ],
+  "pinData": {
+    "Start": [
+      {
+        "json": {
+          "customerId": "CUST-12345",
+          "subject": "Cannot access billing portal",
+          "description": "Customer reports 403 error when navigating to the billing section.",
+          "priority": "high"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Create Ticket API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Ticket API": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "example-version-003",
+  "meta": {
+    "instanceId": "example-instance-id"
+  },
+  "id": "0m9fa0sHYVpE2OAE",
+  "tags": [
+    {
+      "name": "environment:dev"
+    }
+  ]
+}

@@ -28,16 +28,34 @@ Push a local workflow to n8n (update existing workflow).
 ### Step 1: Identify the Workflow
 
 Accept workflow by:
-- **Local file path**: `agents/DEV-BillingBot-InvoiceAgent.json`
-- **Logical name + environment**: "Invoice Agent" (dev or prod)
-- **Full workflow name**: "DEV-BillingBot-InvoiceAgent"
+- **Local file path**: `agents/DEV-Support Agent.json`
+- **Logical name + environment**: "Support Agent" (dev or prod)
+- **Full workflow name**: "DEV-Support Agent" (dev) or "Support Agent" (prod)
 
 ### Step 2: Load and Parse Local Workflow
 
 ```
-1. Read the local JSON file
-2. Parse the workflow name
-3. Detect environment from prefix (DEV- or PROD-)
+1. Resolve local file path (see Step 2.5)
+2. Read the local JSON file
+3. Parse the workflow name from the file
+4. Detect environment from prefix (devPrefix from project.json = dev; otherwise prod)
+```
+
+### Step 2.5: Resolve Local File Path
+
+Use `localPath` from id-mappings.json for file resolution:
+
+```
+1. Get logical name (workflow name without dev prefix, e.g., "Support Agent")
+2. Look up workflow in id-mappings.json workflows
+3. Get localPath from the mapping (e.g., "agents/", "tools/")
+4. Primary path = {localPath}{workflow name}.json
+   Example: agents/DEV-Support Agent.json or tools/List Invoices.json
+5. If file not found at primary path: SELF-HEAL
+   - Search workspace for filename (e.g., "DEV-Support Agent.json")
+   - If found, update localPath in id-mappings.json to match actual location
+   - Proceed with resolved path
+6. If still not found: ERROR - file does not exist
 ```
 
 ### Step 3: Run Pre-Flight Validation
@@ -88,20 +106,21 @@ After a successful push, always update `audit.lastVersionId` in id-mappings.json
 
 ### Step 4: Detect Environment and Apply Safety
 
-Parse environment from workflow name:
+Parse environment from workflow name using `devPrefix` from `config/project.json`:
 
 ```javascript
-if (workflowName.startsWith("DEV-")) {
+devPrefix = project.json.naming.devPrefix  // e.g., "DEV-"
+if (workflowName.startsWith(devPrefix)) {
   environment = "dev"
   requiresConfirmation = false
-} else if (workflowName.startsWith("PROD-")) {
+} else {
+  // Everything else = prod (no PROD- prefix; prod name is the real name)
   environment = "prod"
   requiresConfirmation = true
-} else {
-  // Unknown environment - block operation
-  ERROR("Workflow name must start with DEV- or PROD-")
 }
 ```
+
+No "unknown environment" blocking. DEV = no confirmation; PROD = requires confirmation.
 
 ### Step 5: PROD Safety Checks (If Pushing to PROD)
 
@@ -115,7 +134,7 @@ First, check if the target PROD workflow is active by calling `n8n_get_workflow`
 
 You are about to update a PRODUCTION workflow:
 
-  Workflow: PROD-BillingBot-InvoiceAgent
+  Workflow: Support Agent
   Target ID: xyz789ProdId
   Status: ACTIVE (published)
   
@@ -134,7 +153,7 @@ Type "confirm" to proceed, or anything else to cancel.
 
 You are about to update a PRODUCTION workflow:
 
-  Workflow: PROD-BillingBot-InvoiceAgent
+  Workflow: Support Agent
   Target ID: xyz789ProdId
   Status: INACTIVE (not published)
   
@@ -161,7 +180,8 @@ Before overwriting PROD:
 
 ```
 1. Pull current workflow from n8n via MCP
-2. Save to: agents/PROD-BillingBot-InvoiceAgent.backup.{timestamp}.json
+2. Save to: {localPath}{workflow name}.backup.{timestamp}.json
+   Example: agents/Support Agent.backup.2026-02-05T16-00-00.json
 3. Log backup location
 ```
 
@@ -175,9 +195,13 @@ Before overwriting PROD:
 
 **Logical name extraction:**
 ```
-Full name: "DEV-BillingBot-InvoiceAgent"
-Project name (from config): "BillingBot"
-Logical name: "InvoiceAgent"
+Full name: "DEV-Support Agent"
+devPrefix (from project.json): "DEV-"
+Logical name: "Support Agent"  (strip devPrefix; this is the id-mappings key)
+
+id-mappings.json keys use the PROD name (real name), e.g.:
+  "Support Agent": { ... }
+  "List Invoices": { ... }
 ```
 
 ### Step 8: Prepare Workflow for Push
@@ -186,7 +210,7 @@ Ensure the workflow JSON has the correct ID:
 
 ```json
 {
-  "name": "DEV-BillingBot-InvoiceAgent",
+  "name": "DEV-Support Agent",
   "id": "{TARGET_ID}",  // Must match id-mappings entry
   ...
 }
@@ -228,14 +252,15 @@ Update `config/id-mappings.json`:
 
 ```json
 {
-  "InvoiceAgent": {
+  "Support Agent": {
     "dev": {
       "id": "abc123",
       "status": "active"  // Update from "reserved" if first push
     },
     "audit": {
       "lastPush": "2026-02-05T16:00:00Z",
-      "lastPushEnvironment": "dev"
+      "lastPushEnvironment": "dev",
+      "lastVersionId": "{versionId from push response}"
     }
   }
 }
@@ -247,7 +272,7 @@ Update `config/id-mappings.json`:
 ```
 Successfully pushed workflow to n8n!
 
-Workflow: DEV-BillingBot-InvoiceAgent
+Workflow: DEV-Support Agent
 Target ID: abc123
 Environment: Development
 
@@ -258,11 +283,11 @@ The n8n workflow has been updated with your local changes.
 ```
 Successfully pushed workflow to PRODUCTION!
 
-Workflow: PROD-BillingBot-InvoiceAgent
+Workflow: Support Agent
 Target ID: xyz789
 Environment: Production
 
-Backup saved: agents/PROD-BillingBot-InvoiceAgent.backup.2026-02-05T16-00-00.json
+Backup saved: agents/Support Agent.backup.2026-02-05T16-00-00.json
 
 ⚠️ Please verify the workflow is working correctly in n8n.
 ```
@@ -276,6 +301,7 @@ Backup saved: agents/PROD-BillingBot-InvoiceAgent.backup.2026-02-05T16-00-00.jso
 | Validation failed | Fix validation errors and retry |
 | MCP update failed | Check MCP logs; verify n8n access |
 | User didn't confirm PROD | Operation cancelled; no changes made |
+| File not found at localPath | Self-heal: search workspace by filename; if found, update localPath |
 
 ## Validation Errors and Fixes
 

@@ -95,6 +95,9 @@ You should see a successful connection to your n8n instance with version info an
 
 ## Step 4: Understand the Project Structure
 
+Workflow JSON files live in folders specified by `localPath` in `config/id-mappings.json` (per workflow). Two layouts are supported:
+
+**Flat layout** (default):
 ```
 project/
 ├── agents/              # Agent workflow JSON files (orchestrators)
@@ -111,10 +114,27 @@ project/
     └── skills/          # AI automation skills (invoked on demand)
 ```
 
+**Optional categorized layout** (when `folderStrategy.mode` is `categorized`):
+```
+project/
+├── agents/
+│   └── Support Agent/   # Nested by workflow
+│       └── DEV-Support Agent.json
+├── tools/
+│   ├── List Invoices.json
+│   └── Ticket Lookup.json
+├── config/
+│   └── ...
+└── .cursor/
+    └── ...
+```
+
+Each workflow's `localPath` in id-mappings points to its folder (e.g., `agents/`, `tools/`, or a nested path).
+
 ## Step 5: Review the Configuration
 
 Check `config/project.json` to understand the project setup:
-- **projectName**: Used in workflow naming (`DEV-{ProjectName}-{WorkflowName}`)
+- **projectName**: Display purposes only (dashboards, logs). Not used in workflow names.
 - **n8nProjectId**: Locks all MCP operations to this n8n project
 - **n8nFolder**: The folder in n8n where workflows live (MCP cannot verify this)
 
@@ -142,9 +162,18 @@ The MCP **cannot** create workflows in the correct n8n folder. All new workflows
 
 ### Naming Convention
 
-All workflows follow: `{ENV}-{ProjectName}-{WorkflowName}`
-- `DEV-BillingBot-InvoiceAgent` (development)
-- `PROD-BillingBot-InvoiceAgent` (production)
+- **PROD workflows**: Original name only (e.g., "Support Agent", "List Invoices")
+- **DEV workflows**: `DEV-` prefix + original name (e.g., "DEV-Support Agent", "DEV-List Invoices")
+
+No project name or PROD prefix is used in workflow names.
+
+### External Dependencies
+
+Workflows may reference other workflows in different n8n projects (cross-project refs). The SDLC system operates within a single project. References to workflows outside the locked project are left as-is during push, pull, and promote. Ensure those external workflows exist and are accessible in each environment.
+
+### Folder Categorization
+
+Workflows are classified as agents (orchestrators) or tools (called by agents). The `folderStrategy` in `project.json` controls how workflow JSON files are organized locally: **flat** (agents/ and tools/ only) or **categorized** (nested hierarchy). Each workflow's `localPath` in id-mappings indicates where its JSON file lives.
 
 ### MCP Update Behavior
 
@@ -164,11 +193,13 @@ All workflows follow: `{ENV}-{ProjectName}-{WorkflowName}`
 | What You Want | What to Say |
 |---------------|-------------|
 | Check project health | "Show project status" |
-| Pull latest from n8n | "Pull DEV InvoiceAgent" |
-| Push local changes | "Push DEV InvoiceAgent" |
-| Deploy to production | "Promote InvoiceAgent to prod" |
-| Check for drift | "Diff InvoiceAgent" |
-| Undo a bad promotion | "Rollback PROD InvoiceAgent" |
+| Import existing workflows | "Import my project" |
+| Populate DEV from PROD | "Seed dev for Support Agent" |
+| Pull latest from n8n | "Pull DEV Support Agent" |
+| Push local changes | "Push DEV Support Agent" |
+| Deploy to production | "Promote Support Agent to prod" |
+| Check for drift | "Diff Support Agent" |
+| Undo a bad promotion | "Rollback PROD Support Agent" |
 | Add new workflows | "Reserve workflows" |
 | Validate setup | "Validate project" |
 

@@ -1,0 +1,29 @@
+{
+  "$schema": "../../config/project.schema.json",
+  "projectName": "Customer Support Example",
+  "n8nFolder": "Customer Support",
+  "n8nProjectId": "example-project-id-001",
+  "naming": {
+    "devPrefix": "DEV-"
+  },
+  "folderStrategy": {
+    "mode": "categorized",
+    "dedicatedTools": "categorized"
+  },
+  "tags": {
+    "dev": ["environment:dev"],
+    "prod": ["environment:prod"]
+  },
+  "credentials": {
+    "openai": {
+      "dev": "exCredOpenAI001",
+      "prod": "exCredOpenAI002"
+    },
+    "crm-api": {
+      "dev": "exCredApiKey001",
+      "prod": "exCredApiKey002"
+    }
+  },
+  "createdAt": "2026-02-23T00:00:00.000Z",
+  "version": "2.0"
+}

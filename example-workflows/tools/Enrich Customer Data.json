@@ -1,0 +1,197 @@
+{
+  "name": "DEV-Enrich Customer Data",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "customerId"
+            },
+            {
+              "name": "customerName"
+            },
+            {
+              "name": "email"
+            }
+          ]
+        }
+      },
+      "id": "d1b2c3d4-4444-4000-a000-000000000001",
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [200, 340]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.example.com/customers/{{ $json.customerId }}/subscriptions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "d1b2c3d4-4444-4000-a000-000000000002",
+      "name": "Get Subscriptions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 220],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "exCredApiKey001",
+          "name": "CRM API Key - Example"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.example.com/customers/{{ $json.customerId }}/tickets?status=open",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "d1b2c3d4-4444-4000-a000-000000000003",
+      "name": "Get Open Tickets",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 460],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "exCredApiKey001",
+          "name": "CRM API Key - Example"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "id": "d1b2c3d4-4444-4000-a000-000000000004",
+      "name": "Merge Data",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [680, 340]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "enrich-001",
+              "name": "customerId",
+              "value": "={{ $('Start').item.json.customerId }}",
+              "type": "string"
+            },
+            {
+              "id": "enrich-002",
+              "name": "customerName",
+              "value": "={{ $('Start').item.json.customerName }}",
+              "type": "string"
+            },
+            {
+              "id": "enrich-003",
+              "name": "email",
+              "value": "={{ $('Start').item.json.email }}",
+              "type": "string"
+            },
+            {
+              "id": "enrich-004",
+              "name": "subscriptions",
+              "value": "={{ $('Get Subscriptions').item.json }}",
+              "type": "object"
+            },
+            {
+              "id": "enrich-005",
+              "name": "openTicketCount",
+              "value": "={{ $('Get Open Tickets').item.json.total || 0 }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d1b2c3d4-4444-4000-a000-000000000005",
+      "name": "Build Enriched Profile",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [920, 340]
+    }
+  ],
+  "pinData": {
+    "Start": [
+      {
+        "json": {
+          "customerId": "CUST-12345",
+          "customerName": "ACME Corp",
+          "email": "admin@acme.example.com"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Get Subscriptions",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Open Tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Subscriptions": {
+      "main": [
+        [
+          {
+            "node": "Merge Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Open Tickets": {
+      "main": [
+        [
+          {
+            "node": "Merge Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Data": {
+      "main": [
+        [
+          {
+            "node": "Build Enriched Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "example-version-004",
+  "meta": {
+    "instanceId": "example-instance-id"
+  },
+  "id": "OBegLl4ZxRHDWH7h",
+  "tags": [
+    {
+      "name": "environment:dev"
+    }
+  ]
+}

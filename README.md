@@ -2,6 +2,8 @@
 
 A portable, lightweight Software Development Lifecycle (SDLC) framework for managing n8n workflows with dev/prod separation. Pull this into any n8n project workspace to enable version-controlled SDLC.
 
+**Version:** v2.0
+
 ## Overview
 
 This system enables safe development of n8n workflows by providing:
@@ -30,13 +32,15 @@ This system enables safe development of n8n workflows by providing:
    Say: "Promote [workflow name] to prod"
    ```
 
+**Already have workflows?** Say **"Import my project"** to discover and register existing workflows into the SDLC system.
+
 ## Documentation
 
 | Document | Description |
 |----------|-------------|
 | [PRD](docs/n8n-SDLC-PRD.md) | Product Requirements Document |
 | [MCP Test Plan](docs/MCP-Test-Plan.md) | MCP behavior tests and results |
-| [Pilot Guide](docs/Pilot-Guide-BillingBot.md) | Walkthrough using Billing Bot |
+| [Pilot Guide](docs/Pilot-Guide-BillingBot.md) | Walkthrough using a sample project |
 | [Team Onboarding](docs/Team-Onboarding.md) | Setup guide for new team members |
 
 ## Skills Reference
@@ -44,7 +48,9 @@ This system enables safe development of n8n workflows by providing:
 | Skill | Purpose |
 |-------|---------|
 | `n8n-getting-started` | Initialize a new project |
+| `import-project` | Discover and register existing workflows |
 | `reserve-workflows` | Reserve and claim workflow slots |
+| `seed-dev` | Populate DEV from PROD with ID transformation |
 | `pull-workflow` | Fetch workflow from n8n |
 | `push-workflow` | Update workflow in n8n (with drift detection) |
 | `promote-workflow` | Promote DEV to PROD with ID transformation |
@@ -62,6 +68,7 @@ This system enables safe development of n8n workflows by providing:
 
 ## Directory Structure
 
+**Flat layout** (default):
 ```
 .
 ├── agents/              # Agent workflow JSON files
@@ -70,10 +77,22 @@ This system enables safe development of n8n workflows by providing:
 ├── config/              # Project configuration
 │   ├── project.json     # Project settings
 │   └── id-mappings.json # Dev/prod ID mappings
-├── example/             # Reference examples (Billing Bot)
+├── example/             # Reference examples
 └── .cursor/
     ├── rules/           # SDLC rules and conventions
     └── skills/          # Automation skills
+```
+
+**Categorized layout** (optional, set during import):
+```
+.
+├── agents/              # Top-level agents (entry points)
+│   └── agents/          # Sub-agents (agents called by other agents)
+├── tools/               # Shared tools
+│   └── {parent}/        # Dedicated tools grouped by parent (optional)
+├── docs/
+├── config/
+└── .cursor/
 ```
 
 ## Key Concepts
@@ -87,18 +106,34 @@ Due to n8n MCP limitations, workflows must be:
 
 ### Naming Convention
 
-All workflows follow: `{ENV}-{ProjectName}-{WorkflowName}`
+- **PROD** workflows keep their original name (e.g., `Support Agent`, `List Invoices`)
+- **DEV** workflows prepend the dev prefix: `DEV-Support Agent`, `DEV-List Invoices`
+- No project name in workflow names. No `PROD-` prefix.
+- The dev prefix comes from `config/project.json` `naming.devPrefix` (default: `DEV-`)
 
-- `DEV-BillingBot-InvoiceAgent`
-- `PROD-BillingBot-InvoiceAgent`
+### External Dependencies
+
+When a workflow references another workflow that belongs to a **different** n8n project:
+- The system records it in `id-mappings.json` under `externalDependencies`
+- During promotion and seeding, external `workflowId` references are **left untouched** (same ID serves both DEV and PROD)
+- External workflows are never pulled, modified, or managed by this SDLC
+
+### Folder Categorization
+
+During import, you can choose how workflows are organized locally:
+- **Flat**: All agents in `agents/`, all tools in `tools/`
+- **Categorized**: Top-level agents in `agents/`, sub-agents in `agents/agents/`, shared tools in `tools/`, with optional grouping of dedicated tools by parent
 
 ### ID Transformation
 
-When promoting, the system transforms:
-- Workflow name (DEV → PROD prefix)
-- Workflow ID (dev ID → prod ID)
-- Tool references (dev tool IDs → prod tool IDs)
-- Credentials (if mapped)
+When promoting DEV → PROD (or seeding PROD → DEV), the system transforms:
+
+| What | Transformation |
+|------|-----------------|
+| **Name** | Strip `DEV-` prefix for promotion; prepend it for seeding |
+| **Workflow ID** | dev ID ↔ prod ID |
+| **Tool references** | In-project only: dev tool IDs ↔ prod tool IDs. External refs left untouched. |
+| **Credentials** | If mapped in `project.json`, dev credential IDs ↔ prod credential IDs |
 
 ## Safety Features
 

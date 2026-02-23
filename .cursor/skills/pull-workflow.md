@@ -20,13 +20,19 @@ Fetch a workflow from n8n and save it locally.
 ### Step 1: Identify the Workflow
 
 The user may specify the workflow by:
-- **Logical name**: "Invoice Agent" (look up in id-mappings.json)
-- **Full name**: "DEV-BillingBot-InvoiceAgent" 
+- **Logical name** (PROD name): "Support Agent" — the id-mappings key
+- **Full name**: "DEV-Support Agent" or "Support Agent"
 - **n8n ID**: "YbM4pqxRD0AnOVhb"
+
+**Naming convention:**
+- Logical name = id-mappings key = PROD name (e.g., "Support Agent")
+- Full DEV name = `{devPrefix}{logical name}` (e.g., "DEV-Support Agent")
+- Full PROD name = logical name, no prefix (e.g., "Support Agent")
+- `devPrefix` comes from `config/project.json` → `naming.devPrefix`
 
 If the user gives a logical name, determine which environment:
 ```
-Do you want to pull the DEV or PROD version of "Invoice Agent"?
+Do you want to pull the DEV or PROD version of "Support Agent"?
 ```
 
 ### Step 2: Resolve the Workflow ID
@@ -34,15 +40,16 @@ Do you want to pull the DEV or PROD version of "Invoice Agent"?
 **If logical name provided:**
 ```
 1. Read config/id-mappings.json
-2. Find the workflow entry by name
-3. Get the dev.id or prod.id based on environment
+2. Find the workflow entry by name (key = PROD name)
+3. Get dev.id or prod.id based on environment
 ```
 
 **If full name provided:**
 ```
-1. Parse the environment prefix (DEV- or PROD-)
-2. Look up in id-mappings.json
-3. Get the corresponding ID
+1. Parse environment: DEV prefix present = dev, no prefix = prod
+2. Strip devPrefix to get logical name (if DEV)
+3. Look up in id-mappings.json by logical name
+4. Get the corresponding ID
 ```
 
 **If ID provided:**
@@ -72,33 +79,24 @@ After fetching, verify the workflow is in the locked project: `data.shared[0].pr
 
 ### Step 5: Determine Local File Path
 
-Based on workflow type and environment:
+Use `localPath` from id-mappings.json — do not derive path from workflow type.
 
-**Agent workflows:**
+**File path formula:**
 ```
-agents/{FULL-WORKFLOW-NAME}.json
-
-Example: agents/DEV-BillingBot-InvoiceAgent.json
+{localPath}{workflow name}.json
 ```
 
-**Tool workflows:**
-```
-tools/{FULL-WORKFLOW-NAME}.json
+- DEV: `{localPath}{devPrefix}{logical name}.json` → e.g., `agents/DEV-Support Agent.json`
+- PROD: `{localPath}{logical name}.json` → e.g., `agents/Support Agent.json`
 
-Example: tools/DEV-BillingBot-ListInvoices.json
-```
-
-**How to determine type:**
-- Check `type` field in id-mappings.json entry
-- Or check if workflow contains AI agent nodes (`@n8n/n8n-nodes-langchain.agent`)
-- Default to "tool" if unclear
+**Self-healing:** If the expected file exists elsewhere (e.g., moved), search the workspace for `{workflow name}.json` or `DEV-{logical name}.json`. If found, use that path and optionally update id-mappings.json `localPath` to reflect the actual location.
 
 ### Step 6: Handle Existing Local File
 
 If the local file already exists:
 
 ```
-Local file already exists: agents/DEV-BillingBot-InvoiceAgent.json
+Local file already exists: agents/DEV-Support Agent.json
 
 Options:
 1. Overwrite (replace local with n8n version)
@@ -119,9 +117,9 @@ What would you like to do?
 Write the workflow JSON to the determined path:
 
 ```json
-// Save to: agents/DEV-BillingBot-InvoiceAgent.json
+// Save to: agents/DEV-Support Agent.json
 {
-  "name": "DEV-BillingBot-InvoiceAgent",
+  "name": "DEV-Support Agent",
   "nodes": [...],
   ...
 }
@@ -133,10 +131,15 @@ Update `config/id-mappings.json` with pull timestamp and versionId (for drift de
 
 ```json
 {
-  "InvoiceAgent": {
+  "Support Agent": {
     "type": "agent",
+    "localPath": "agents/",
     "dev": {
       "id": "abc123",
+      "status": "active"
+    },
+    "prod": {
+      "id": "xyz789",
       "status": "active"
     },
     "audit": {
@@ -152,9 +155,9 @@ Update `config/id-mappings.json` with pull timestamp and versionId (for drift de
 ```
 Successfully pulled workflow from n8n!
 
-Workflow: DEV-BillingBot-InvoiceAgent
+Workflow: DEV-Support Agent
 Source ID: YbM4pqxRD0AnOVhb
-Saved to: agents/DEV-BillingBot-InvoiceAgent.json
+Saved to: agents/DEV-Support Agent.json
 
 The local file now matches the n8n version.
 ```
@@ -217,8 +220,8 @@ Would you like to:
 Before promotion, pull current PROD as backup:
 
 ```
-Pulling PROD-BillingBot-InvoiceAgent as backup...
-Saved to: agents/PROD-BillingBot-InvoiceAgent.backup.json
+Pulling Support Agent (PROD) as backup...
+Saved to: agents/Support Agent.backup.json
 
 This backup can be used to restore if promotion causes issues.
 ```

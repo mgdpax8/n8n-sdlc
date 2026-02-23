@@ -14,8 +14,7 @@
     "projectName": {
       "type": "string",
       "minLength": 1,
-      "pattern": "^[A-Z][a-zA-Z0-9]+$",
-      "description": "PascalCase project name used in workflow naming: {ENV}-{ProjectName}-{WorkflowName}"
+      "description": "Human-readable project name for display purposes (dashboards, logs). Not used in workflow naming."
     },
     "n8nFolder": {
       "type": "string",
@@ -29,22 +28,31 @@
     },
     "naming": {
       "type": "object",
-      "required": ["devPrefix", "prodPrefix", "separator"],
+      "required": ["devPrefix"],
       "properties": {
         "devPrefix": {
           "type": "string",
           "default": "DEV-",
-          "description": "Prefix for development workflow names"
-        },
-        "prodPrefix": {
+          "description": "Prefix prepended to workflow names for development copies. PROD workflows keep their original name with no prefix."
+        }
+      },
+      "additionalProperties": false
+    },
+    "folderStrategy": {
+      "type": "object",
+      "description": "Controls how workflow JSON files are organized locally. Set during import-project or getting-started.",
+      "properties": {
+        "mode": {
           "type": "string",
-          "default": "PROD-",
-          "description": "Prefix for production workflow names"
+          "enum": ["flat", "categorized"],
+          "default": "flat",
+          "description": "flat: agents/ and tools/ only. categorized: nested hierarchy based on dependency graph and workflow type."
         },
-        "separator": {
+        "dedicatedTools": {
           "type": "string",
-          "default": "-",
-          "description": "Separator between naming components"
+          "enum": ["flat", "grouped", "alongside"],
+          "default": "flat",
+          "description": "Only used when mode=categorized. flat: all tools in tools/. grouped: tools/{parent-name}/. alongside: same folder as calling agent."
         }
       },
       "additionalProperties": false

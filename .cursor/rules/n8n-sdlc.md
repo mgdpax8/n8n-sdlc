@@ -15,43 +15,48 @@ This means:
 
 ### Workflow Names
 
-All workflows MUST follow this naming pattern:
-
-```
-{ENV}-{ProjectName}-{WorkflowName}
-```
-
-Where:
-- `{ENV}` is either `DEV` or `PROD`
-- `{ProjectName}` is from `config/project.json`
-- `{WorkflowName}` is a descriptive name (PascalCase, no spaces)
+- **PROD** workflows keep their original name as-is (e.g., `Support Agent`, `List Invoices`)
+- **DEV** workflows prepend the dev prefix: `DEV-Support Agent`, `DEV-List Invoices`
+- No project name in workflow names. No `PROD-` prefix.
+- The dev prefix comes from `config/project.json` `naming.devPrefix` (default: `DEV-`)
 
 **Examples:**
-- `DEV-BillingBot-InvoiceAgent`
-- `PROD-BillingBot-InvoiceAgent`
-- `DEV-BillingBot-ListInvoices`
-- `PROD-BillingBot-ListInvoices`
+- PROD: `Support Agent`, DEV: `DEV-Support Agent`
+- PROD: `List Invoices`, DEV: `DEV-List Invoices`
+- PROD: `Billing Agent`, DEV: `DEV-Billing Agent`
 
 ### Local File Names
 
-Workflow JSON files saved locally should match the workflow name:
-- `agents/DEV-BillingBot-InvoiceAgent.json`
-- `tools/DEV-BillingBot-ListInvoices.json`
+Workflow JSON files are saved to the folder specified by `localPath` in `id-mappings.json`:
+- `agents/DEV-Support Agent.json`
+- `agents/Support Agent.json`
+- `tools/DEV-List Invoices.json`
+
+### id-mappings.json Keys
+
+Workflow keys in `id-mappings.json` use the **PROD name** (the real name):
+```json
+{
+  "workflows": {
+    "Support Agent": { "type": "agent", "localPath": "agents/", ... },
+    "List Invoices": { "type": "tool", "localPath": "tools/", ... }
+  }
+}
+```
 
 ## Project Configuration Requirements
 
 Before performing ANY n8n operation, verify:
 
 1. `config/project.json` EXISTS and contains:
-   - `projectName` - non-empty string
+   - `projectName` - non-empty string (display only, not used in workflow names)
    - `n8nFolder` - non-empty string
    - `n8nProjectId` - non-empty string (from workflow URL: projectId=...); locks MCP to this project only
    - `naming.devPrefix` - typically "DEV-"
-   - `naming.prodPrefix` - typically "PROD-"
 
 2. `config/id-mappings.json` EXISTS (for push/promote operations)
 
-If these files don't exist, run the **Getting Started** skill first.
+If these files don't exist, run the **Getting Started** or **Import Project** skill first.
 
 ## Reserve and Claim Pattern
 
@@ -69,6 +74,14 @@ This is the ONLY way to get workflows into the correct n8n folder.
 When calling `n8n_list_workflows`, **always** pass `projectId` from `config/project.json` (`n8nProjectId`). Never list all workflows without this filter.
 
 Before any `n8n_update_full_workflow`, `n8n_update_partial_workflow`, or **push** to an n8n workflow by ID: get the workflow once via `n8n_get_workflow` (mode: "full"); verify `data.shared[0].projectId` equals `config/project.json`'s `n8nProjectId`. If it does not match, refuse the operation and tell the user the workflow is not in the locked project.
+
+## External Dependencies
+
+When a workflow references another workflow (via `workflowId`) that belongs to a **different** n8n project:
+- **Never pull, modify, or manage** that workflow
+- Record it in `id-mappings.json` under `externalDependencies`
+- During promotion, leave external `workflowId` references **untouched** (same ID serves both DEV and PROD)
+- Inform the user about external dependencies during import and promotion
 
 ## MCP Update Behavior (Tested 2026-02-23)
 
@@ -92,25 +105,25 @@ Before any `n8n_update_full_workflow`, `n8n_update_partial_workflow`, or **push*
 
 ### Before ANY Push Operation
 
-1. ✅ Verify `config/project.json` exists
-2. ✅ Verify `config/id-mappings.json` exists
-3. ✅ Verify workflow name matches project naming convention
-4. ✅ Verify target workflow ID exists in id-mappings.json
+1. Verify `config/project.json` exists
+2. Verify `config/id-mappings.json` exists
+3. Verify workflow is registered in id-mappings.json
+4. Verify target workflow ID exists and is not null
 
 ### Before Push to PROD
 
 In addition to standard checks:
 
-1. ✅ Detect environment from workflow name prefix
-2. ⚠️ If PROD: Display warning and require explicit "confirm" from user
-3. ✅ Save backup of current prod state locally before overwriting
+1. Detect environment from workflow name (see Environment Detection below)
+2. If PROD: Display warning and require explicit "confirm" from user
+3. Save backup of current prod state locally before overwriting
 
 **Example confirmation prompt:**
 ```
-⚠️ PRODUCTION UPDATE WARNING
+PRODUCTION UPDATE WARNING
 
 You are about to update PRODUCTION workflow:
-  Name: PROD-BillingBot-InvoiceAgent
+  Name: Support Agent
   ID: xyz789ProdId
 
 This will affect live systems. Type "confirm" to proceed.
@@ -118,51 +131,74 @@ This will affect live systems. Type "confirm" to proceed.
 
 ### Before Promote Operation
 
-1. ✅ All standard push checks
-2. ✅ Verify prod slot exists in id-mappings (status != "needs-slot")
-3. ✅ Check ALL `workflowId` references in the workflow have prod mappings
-4. ✅ Check credential mappings if workflow uses environment-specific credentials
-5. ⚠️ If any reference is unmapped: STOP and tell user to reserve more slots
+1. All standard push checks
+2. Verify prod slot exists in id-mappings (status != "needs-slot")
+3. Check ALL in-project `workflowId` references have prod mappings
+4. External dependency references are left as-is (no mapping needed)
+5. Check credential mappings if workflow uses environment-specific credentials
+6. If any in-project reference is unmapped: STOP and tell user to reserve more slots
 
 ## ID Transformation During Promotion
 
 When promoting from dev to prod, transform:
 
-1. **Workflow name**: `DEV-{Project}-{Name}` → `PROD-{Project}-{Name}`
+1. **Workflow name**: Strip the dev prefix (`DEV-Support Agent` -> `Support Agent`)
 
-2. **workflowId references** (in tool nodes):
+2. **workflowId references** (in-project only):
    ```json
    "workflowId": {
-     "value": "{dev-workflow-id}"  // → "{prod-workflow-id}"
+     "value": "{dev-workflow-id}"  // -> "{prod-workflow-id}"
    }
    ```
+   External dependency references are left untouched.
 
 3. **Credential IDs** (only if mapped in project.json):
    ```json
    "credentials": {
      "type": {
-       "id": "{dev-cred-id}"  // → "{prod-cred-id}"
+       "id": "{dev-cred-id}"  // -> "{prod-cred-id}"
      }
    }
    ```
 
+## Reverse Transformation (Seed DEV from PROD)
+
+When seeding a DEV copy from an existing PROD workflow:
+
+1. **Workflow name**: Prepend the dev prefix (`Support Agent` -> `DEV-Support Agent`)
+2. **workflowId references** (in-project only): PROD IDs -> DEV IDs
+3. **Credential IDs**: PROD -> DEV (if mapped)
+4. External dependency references are left untouched.
+
 ## Environment Detection
 
-Determine environment from workflow name prefix:
+Determine environment from workflow name:
 
-| Prefix | Environment | Safety Level |
-|--------|-------------|--------------|
-| `DEV-` | Development | Standard (no confirmation needed) |
-| `PROD-` | Production | High (requires explicit confirmation) |
-| Other | Unknown | Block operation, ask user |
+| Name Pattern | Environment | Safety Level |
+|--------------|-------------|--------------|
+| Starts with `DEV-` | Development | Standard (no confirmation needed) |
+| Does NOT start with `DEV-` | Production | High (requires explicit confirmation) |
+
+## File Resolution (localPath + Self-Healing)
+
+Each workflow's `localPath` in `id-mappings.json` specifies the folder where its JSON files live. The file name is the workflow name + `.json`.
+
+To resolve a file: `{localPath}{workflow name}.json` (e.g., `agents/DEV-Support Agent.json`).
+
+**Self-healing:** If a file is not found at the expected `localPath`:
+1. Search the workspace by filename
+2. If found elsewhere: ask user if they want to update the mapping
+3. If multiple matches: list them and ask which is correct
+4. If not found anywhere: suggest pulling from n8n
 
 ## Forbidden Actions
 
-1. ❌ NEVER push to a PROD workflow without explicit user confirmation
-2. ❌ NEVER create workflows via MCP (they go to wrong folder)
-3. ❌ NEVER promote if any workflowId reference lacks a prod mapping
-4. ❌ NEVER delete or overwrite id-mappings.json without backup
-5. ❌ NEVER modify a workflow name in a way that changes its environment
+1. NEVER push to a PROD workflow without explicit user confirmation
+2. NEVER create workflows via MCP (they go to wrong folder)
+3. NEVER promote if any in-project workflowId reference lacks a prod mapping
+4. NEVER delete or overwrite id-mappings.json without backup
+5. NEVER modify a workflow name in a way that changes its environment
+6. NEVER pull, modify, or manage workflows outside the locked project
 
 ## Audit Trail Requirements
 
@@ -171,9 +207,9 @@ When performing operations, update `id-mappings.json` audit fields:
 ```json
 {
   "audit": {
-    "lastPromoted": "2026-02-05T14:30:00Z",  // When promoted
-    "promotionCount": 3,                      // How many times
-    "lastLocalPull": "2026-02-05T10:00:00Z"  // Last pulled from n8n
+    "lastPromoted": "2026-02-05T14:30:00Z",
+    "promotionCount": 3,
+    "lastLocalPull": "2026-02-05T10:00:00Z"
   }
 }
 ```
@@ -187,12 +223,11 @@ When performing operations, update `id-mappings.json` audit fields:
 
 ## File Organization
 
+Default flat layout:
 ```
 project/
-├── agents/           # Agent workflows (orchestrators)
-│   └── DEV-*.json
-├── tools/            # Tool workflows (called by agents)
-│   └── DEV-*.json
+├── agents/           # Agent workflows (AI-powered)
+├── tools/            # Tool workflows (plain automation)
 ├── docs/             # Documentation
 ├── config/           # Configuration files
 │   ├── project.json
@@ -202,6 +237,18 @@ project/
     └── skills/       # Automation skills
 ```
 
+Categorized layout (if chosen during import):
+```
+project/
+├── agents/           # Top-level agents (entry points)
+│   └── agents/       # Sub-agents (agents called by other agents)
+├── tools/            # Shared tools or all tools (depending on strategy)
+│   └── {parent}/     # Grouped dedicated tools (if grouped strategy)
+├── docs/
+├── config/
+└── .cursor/
+```
+
 ## Quick Reference
 
 | Operation | Confirmation Required | Config Required |
@@ -209,6 +256,8 @@ project/
 | Pull any workflow | No | project.json |
 | Push to DEV | No | project.json, id-mappings.json |
 | Push to PROD | Yes - explicit "confirm" | project.json, id-mappings.json |
-| Promote DEV→PROD | Yes - show changes + "confirm" | Both configs + all refs mapped |
+| Promote DEV->PROD | Yes - show changes + "confirm" | Both configs + all in-project refs mapped |
+| Seed DEV from PROD | No | project.json, id-mappings.json |
+| Import project | User guides discovery | project.json |
 | Reserve slots | User selects from list | project.json |
 | Getting started | User provides info | None (creates them) |

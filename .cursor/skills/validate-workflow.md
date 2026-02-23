@@ -41,8 +41,7 @@ Required fields:
 - projectName (non-empty string)
 - n8nFolder (non-empty string)
 - n8nProjectId (non-empty string; from workflow URL projectId=...; locks MCP to this project)
-- naming.devPrefix (typically "DEV-")
-- naming.prodPrefix (typically "PROD-")
+- naming.devPrefix (typically "DEV-"; from config/project.json)
 
 If invalid:
   ❌ FAIL: project.json missing required field: {fieldName}
@@ -74,51 +73,74 @@ If they do not match:
 
 **Check 2.1: Workflow name follows pattern**
 ```
-Expected pattern: {ENV}-{ProjectName}-{WorkflowName}
+Expected pattern:
+- DEV: name starts with devPrefix (from config/project.json naming.devPrefix, typically "DEV-")
+- PROD: plain name with no prefix
 
-Where:
-- ENV is DEV or PROD
-- ProjectName matches config/project.json projectName
-- WorkflowName is descriptive (PascalCase)
+Examples (with devPrefix "DEV-"):
+  ✓ DEV-Support Agent
+  ✓ DEV-List Invoices
+  ✓ Support Agent
+  ✓ List Invoices
+  ✗ DEVSupport Agent (missing hyphen after DEV)
+  ✗ dev-Support Agent (wrong case; must match devPrefix exactly)
 
-Examples:
-  ✓ DEV-BillingBot-InvoiceAgent
-  ✓ PROD-BillingBot-ListInvoices
-  ✗ InvoiceAgent (missing prefix and project)
-  ✗ DEV-InvoiceAgent (missing project name)
-  ✗ dev-BillingBot-InvoiceAgent (wrong case)
+Logical name extraction (for id-mappings lookup):
+- If name starts with devPrefix: logicalName = name.slice(devPrefix.length)
+- Else: logicalName = name
 
 If invalid:
   ❌ FAIL: Workflow name "{name}" does not follow convention
-  Expected: {devPrefix}{projectName}-{WorkflowName}
+  Expected: DEV workflows start with "{devPrefix}", PROD workflows use plain name
   Fix: Rename workflow to follow the pattern
 ```
 
-**Check 2.2: Environment prefix is valid**
+**Check 2.2: Environment determination**
 ```
-Valid prefixes (from project.json):
-- naming.devPrefix (default: "DEV-")
-- naming.prodPrefix (default: "PROD-")
+- Name starts with devPrefix (e.g., "DEV-") → Development environment
+- Otherwise → Production environment
 
-If invalid:
-  ❌ FAIL: Unknown environment prefix in "{name}"
-  Expected: DEV- or PROD-
-  Fix: Rename workflow with correct prefix
+No "unknown prefix" error. All names are either dev or prod.
 ```
 
 ### Level 3: ID Mapping Validation
 
 **Check 3.1: Workflow exists in mappings**
 ```
-Extract logical name from full workflow name
-Look up in id-mappings.json
+Extract logical name from full workflow name:
+- If name starts with devPrefix: logicalName = name.slice(devPrefix.length)
+- Else: logicalName = name
+
+Look up logicalName in id-mappings.json workflows
 
 If not found:
   ❌ FAIL: Workflow "{logicalName}" not found in id-mappings.json
   Fix: Run "reserve-workflows" to add this workflow
 ```
 
-**Check 3.2: Target environment ID exists**
+**Check 3.2: localPath validation**
+```
+For the workflow's id-mappings entry:
+1. Verify localPath exists and is a non-empty string
+2. Verify the localPath folder exists on disk (e.g., agents/, tools/)
+3. Verify the workflow JSON file exists at {localPath}/{workflowName}.json
+
+Self-healing: If file not found at expected localPath, search workspace for {workflowName}.json
+- If found elsewhere, suggest updating localPath in id-mappings
+- If not found anywhere, fail
+
+If localPath missing or invalid:
+  ❌ FAIL: Workflow "{logicalName}" has invalid localPath
+  localPath: {localPath}
+  Fix: Update localPath in id-mappings.json to the correct folder
+
+If folder or file not found:
+  ❌ FAIL: Workflow file not found for "{logicalName}"
+  Expected: {localPath}/{workflowName}.json
+  Fix: Ensure the workflow JSON exists at the expected path, or run pull-workflow
+```
+
+**Check 3.3: Target environment ID exists**
 ```
 For push to DEV: Check dev.id is not null
 For push to PROD: Check prod.id is not null
@@ -129,7 +151,7 @@ If null:
   Fix: Run "reserve-workflows" to reserve a {env} slot
 ```
 
-**Check 3.3: No duplicate IDs**
+**Check 3.4: No duplicate IDs**
 ```
 Scan all mappings for duplicate IDs
 Each n8n ID should appear only once
@@ -149,10 +171,15 @@ Scan workflow for:
 - n8n-nodes-base.executeWorkflow nodes
 
 For each workflowId found:
-1. Find the mapping entry by dev ID
-2. Verify prod.id is not null
+1. Check if workflowId is in id-mappings workflows (by dev.id)
+   - If yes: verify prod.id is not null (in-project ref needs prod mapping for promotion)
+2. Check if workflowId is in externalDependencies
+   - If yes: no prod mapping needed (external deps are left as-is during promotion)
+3. If in neither: fail (unknown reference)
 
-If any reference unmapped:
+External dependencies don't need prod mappings—they use the same ID in both environments.
+
+If any in-project reference unmapped:
   ❌ FAIL: Unmapped workflow reference found
   
   | Node Name      | DEV ID      | PROD ID |
@@ -181,7 +208,7 @@ If missing:
 ```
 ✅ VALIDATION PASSED
 
-Workflow: DEV-BillingBot-InvoiceAgent
+Workflow: DEV-Support Agent
 Environment: Development
 Target ID: abc123
 
@@ -190,6 +217,7 @@ All checks passed:
   ✓ id-mappings.json exists
   ✓ Naming convention correct
   ✓ Workflow mapped with valid ID
+  ✓ localPath valid and file exists
 
 Ready for operation.
 ```
@@ -198,15 +226,15 @@ Ready for operation.
 ```
 ❌ VALIDATION FAILED
 
-Workflow: DEV-BillingBot-InvoiceAgent
+Workflow: DEV-Support Agent
 Environment: Development
 
 Errors found (2):
-  1. ❌ Workflow "InvoiceAgent" not found in id-mappings.json
+  1. ❌ Workflow "Support Agent" not found in id-mappings.json
      Fix: Run "reserve-workflows" to add this workflow
 
-  2. ❌ Referenced workflow "ListInvoices" has no PROD mapping
-     Fix: Reserve PROD slot for "ListInvoices" before promoting
+  2. ❌ Referenced workflow "List Invoices" has no PROD mapping
+     Fix: Reserve PROD slot for "List Invoices" before promoting
 
 Warnings (1):
   ⚠️ Credential "slack" referenced but not in credential mappings
@@ -239,10 +267,10 @@ Users can request validation directly:
 User: "validate project"
 → Run Level 1 checks only
 
-User: "validate DEV-BillingBot-InvoiceAgent"
+User: "validate DEV-Support Agent"
 → Run Levels 1-3 for the specified workflow
 
-User: "validate for promotion InvoiceAgent"
+User: "validate for promotion Support Agent"
 → Run Levels 1-4 to check if ready for promotion
 ```
 
@@ -254,11 +282,12 @@ User: "validate for promotion InvoiceAgent"
 | project.json valid | 1 | All operations |
 | id-mappings.json exists | 1 | Push, Promote |
 | Name follows convention | 2 | Push, Promote |
-| Environment prefix valid | 2 | Push, Promote |
+| Environment determination | 2 | Push, Promote |
 | Workflow in mappings | 3 | Push, Promote |
+| localPath valid and file exists | 3 | Push, Promote |
 | Target ID not null | 3 | Push, Promote |
 | No duplicate IDs | 3 | Push, Promote |
-| All refs have PROD IDs | 4 | Promote only |
+| All refs have PROD IDs (in-project only) | 4 | Promote only |
 | Credential mappings exist | 4 | Promote only |
 
 ## Related Skills

@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "n8n SDLC ID Mappings",
-  "description": "Maps logical workflow names to their n8n IDs for dev/prod separation. Updated by reserve-workflows, push-workflow, and promote-workflow skills.",
+  "description": "Maps workflow names to their n8n IDs for dev/prod separation. Updated by import-project, reserve-workflows, push-workflow, and promote-workflow skills.",
   "type": "object",
   "required": ["workflows", "metadata"],
   "properties": {
@@ -13,9 +13,16 @@
     },
     "workflows": {
       "type": "object",
-      "description": "Map of logical workflow names to their dev/prod n8n IDs. Keys are PascalCase logical names (e.g., 'InvoiceAgent', 'ListInvoices').",
+      "description": "Map of workflow names to their dev/prod n8n IDs. Keys are the PROD workflow name (the real name as it appears in n8n, e.g., 'Support Agent', 'List Invoices').",
       "additionalProperties": {
         "$ref": "#/definitions/workflowMapping"
+      }
+    },
+    "externalDependencies": {
+      "type": "object",
+      "description": "Workflows referenced by in-project workflows but belonging to a different n8n project. Never pulled or modified. Same ID used in both DEV and PROD (no transformation during promotion).",
+      "additionalProperties": {
+        "$ref": "#/definitions/externalDependency"
       }
     },
     "reservedSlots": {
@@ -65,12 +72,16 @@
   "definitions": {
     "workflowMapping": {
       "type": "object",
-      "required": ["type", "dev", "prod"],
+      "required": ["type", "localPath", "dev", "prod"],
       "properties": {
         "type": {
           "type": "string",
           "enum": ["agent", "tool"],
-          "description": "Workflow type: 'agent' for orchestrators, 'tool' for workflows called by agents"
+          "description": "Workflow type: 'agent' for AI-powered workflows (contain @n8n/n8n-nodes-langchain.* nodes), 'tool' for plain automation workflows"
+        },
+        "localPath": {
+          "type": "string",
+          "description": "Relative folder path where this workflow's JSON files are stored (e.g., 'agents/', 'tools/', 'agents/agents/'). File name is derived from the workflow name. Self-healed if files are moved."
         },
         "dev": {
           "$ref": "#/definitions/environmentSlot",
@@ -141,6 +152,26 @@
       },
       "additionalProperties": false
     },
+    "externalDependency": {
+      "type": "object",
+      "required": ["id", "referencedBy"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "n8n workflow ID of the external workflow"
+        },
+        "referencedBy": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of in-project workflow names that reference this external workflow"
+        },
+        "note": {
+          "type": "string",
+          "description": "Optional note about this dependency (e.g., owner, purpose)"
+        }
+      },
+      "additionalProperties": false
+    },
     "reservedSlot": {
       "type": "object",
       "required": ["id"],
@@ -151,7 +182,7 @@
         },
         "claimedBy": {
           "type": ["string", "null"],
-          "description": "Logical workflow name this slot was assigned to, or null if unclaimed"
+          "description": "Workflow name this slot was assigned to, or null if unclaimed"
         },
         "createdAt": {
           "type": "string",

@@ -1,12 +1,13 @@
 {
   "$schema": "./id-mappings.schema.json",
-  "$comment": "This is a TEMPLATE file. Copy to id-mappings.json or use the 'getting started' skill to initialize.",
+  "$comment": "This is a TEMPLATE file. Copy to id-mappings.json or use the 'getting started' / 'import project' skill to initialize.",
 
   "workflows": {
-    "$comment": "Map logical workflow names to their n8n IDs. Structure: name -> {type, dev: {id, status}, prod: {id, status}, audit}",
+    "$comment": "Map workflow names to their n8n IDs. Keys are the PROD name (the real name). Structure: name -> {type, localPath, dev: {id, status}, prod: {id, status}, audit}",
     
-    "$example_Invoice Agent": {
+    "$example_Support Agent": {
       "type": "agent",
+      "localPath": "agents/",
       "dev": {
         "id": "abc123DevId",
         "status": "active"
@@ -20,6 +21,16 @@
         "promotionCount": 1,
         "lastLocalPull": "2026-02-05T10:00:00Z"
       }
+    }
+  },
+
+  "externalDependencies": {
+    "$comment": "Workflows outside this project referenced by in-project workflows. Not managed by SDLC. Same ID used in both DEV and PROD.",
+    
+    "$example_Shared Lookup Tool": {
+      "id": "ext-workflow-id",
+      "referencedBy": ["Support Agent"],
+      "note": "Owned by Platform team. Not managed by this SDLC."
     }
   },
 
@@ -44,7 +55,7 @@
   },
 
   "metadata": {
-    "projectName": "MyProject",
+    "projectName": "My Project",
     "createdAt": "2026-02-05T00:00:00.000Z",
     "lastModified": "2026-02-05T00:00:00.000Z"
   },

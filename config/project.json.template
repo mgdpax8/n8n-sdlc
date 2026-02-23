@@ -1,17 +1,19 @@
 {
   "$schema": "./project.schema.json",
   "$comment": "This is a TEMPLATE file. Copy to project.json and fill in your values, or use the 'getting started' skill.",
-  "projectName": "MyProject",
+  "projectName": "My Project",
   "n8nFolder": "My n8n Folder Name",
   "n8nProjectId": "",
   "naming": {
-    "devPrefix": "DEV-",
-    "prodPrefix": "PROD-",
-    "separator": "-"
+    "devPrefix": "DEV-"
+  },
+  "folderStrategy": {
+    "mode": "flat",
+    "dedicatedTools": "flat"
   },
   "tags": {
-    "dev": ["environment:dev", "project:myproject"],
-    "prod": ["environment:prod", "project:myproject"]
+    "dev": ["environment:dev"],
+    "prod": ["environment:prod"]
   },
   "credentials": {
     "$comment": "Map credentials that differ between dev and prod. Format: alias -> {dev: id, prod: id}",
@@ -21,5 +23,5 @@
     }
   },
   "createdAt": "2026-02-05T00:00:00.000Z",
-  "version": "1.0"
+  "version": "2.0"
 }

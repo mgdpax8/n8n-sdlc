@@ -1,0 +1,101 @@
+{
+  "$schema": "../../config/id-mappings.schema.json",
+
+  "workflows": {
+    "Customer Support Agent": {
+      "type": "agent",
+      "localPath": "agents/",
+      "dev": {
+        "id": "TDUZWd8rliAzVfzE",
+        "status": "active"
+      },
+      "prod": {
+        "id": null,
+        "status": "needs-slot"
+      },
+      "audit": {
+        "lastPromoted": null,
+        "promotionCount": 0,
+        "lastLocalPull": "2026-02-23T00:00:00Z"
+      }
+    },
+    "Lookup Customer": {
+      "type": "tool",
+      "localPath": "tools/",
+      "dev": {
+        "id": "NWXX0Dmyn9zuvUss",
+        "status": "active"
+      },
+      "prod": {
+        "id": null,
+        "status": "needs-slot"
+      },
+      "audit": {
+        "lastPromoted": null,
+        "promotionCount": 0,
+        "lastLocalPull": "2026-02-23T00:00:00Z"
+      }
+    },
+    "Create Ticket": {
+      "type": "tool",
+      "localPath": "tools/",
+      "dev": {
+        "id": "0m9fa0sHYVpE2OAE",
+        "status": "active"
+      },
+      "prod": {
+        "id": null,
+        "status": "needs-slot"
+      },
+      "audit": {
+        "lastPromoted": null,
+        "promotionCount": 0,
+        "lastLocalPull": "2026-02-23T00:00:00Z"
+      }
+    },
+    "Enrich Customer Data": {
+      "type": "tool",
+      "localPath": "tools/",
+      "dev": {
+        "id": "OBegLl4ZxRHDWH7h",
+        "status": "active"
+      },
+      "prod": {
+        "id": null,
+        "status": "needs-slot"
+      },
+      "audit": {
+        "lastPromoted": null,
+        "promotionCount": 0,
+        "lastLocalPull": "2026-02-23T00:00:00Z"
+      }
+    }
+  },
+
+  "externalDependencies": {},
+
+  "reservedSlots": [
+    {
+      "id": "bL7S66k1yIhsKqdT",
+      "claimedBy": null,
+      "createdAt": "2026-02-23T16:56:43.602Z"
+    }
+  ],
+
+  "credentials": {
+    "openai": {
+      "dev": "exCredOpenAI001",
+      "prod": "exCredOpenAI002"
+    },
+    "crm-api": {
+      "dev": "exCredApiKey001",
+      "prod": "exCredApiKey002"
+    }
+  },
+
+  "metadata": {
+    "projectName": "Customer Support Example",
+    "createdAt": "2026-02-23T00:00:00.000Z",
+    "lastModified": "2026-02-23T00:00:00.000Z"
+  }
+}

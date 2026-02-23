@@ -32,6 +32,8 @@ These are the EXISTING workflows. The pilot will:
 3. Set up dev/prod slots
 4. Test the promotion process
 
+**Alternative for brownfield onboarding:** If you already have workflows in n8n and want to discover them automatically, use the **import-project** skill instead of the manual registration steps below. Import-project offers two discovery modes (master workflow traversal or full project pull) and will register workflows, assign local paths, and optionally categorize folders. See `.cursor/skills/import-project.md` for details.
+
 ---
 
 ## Phase 1: Initialize Project
@@ -43,7 +45,7 @@ User: "Set up n8n project for Billing Bot"
 ```
 
 **Provide:**
-- Project Name: `BillingBot`
+- Project Name: `Billing Bot` (display only, not used in workflow names)
 - n8n Folder Name: [Your actual n8n folder name, e.g., "AITO - Billing Bot"]
 
 **Result:** Creates `config/project.json` and `config/id-mappings.json`
@@ -54,15 +56,15 @@ Check that `config/project.json` looks correct:
 
 ```json
 {
-  "projectName": "BillingBot",
+  "projectName": "Billing Bot",
   "n8nFolder": "AITO - Billing Bot",
   "naming": {
-    "devPrefix": "DEV-",
-    "prodPrefix": "PROD-",
-    "separator": "-"
+    "devPrefix": "DEV-"
   }
 }
 ```
+
+**Naming convention:** PROD workflows use their real name (e.g., `Invoice Agent`). DEV workflows use the `DEV-` prefix (e.g., `DEV-Invoice Agent`). No project name in workflow names, no PROD- prefix.
 
 ---
 
@@ -87,7 +89,7 @@ Identify the n8n IDs for each existing workflow. From the example files:
 ### Step 2.2: Decide Dev/Prod Strategy
 
 **Option A: Current workflows become DEV**
-- Rename current workflows to DEV-BillingBot-*
+- Rename current workflows to DEV-* (e.g., `Invoice Agent` → `DEV-Invoice Agent`)
 - Reserve new slots for PROD copies
 
 **Option B: Current workflows become PROD**
@@ -129,30 +131,34 @@ The AI will pull the new workflows and help you assign them.
 
 ### Step 2.5: Update id-mappings.json
 
-After registration, your mappings should look like:
+After registration, your mappings should look like (PROD names as keys, `localPath` included):
 
 ```json
 {
   "workflows": {
-    "InvoiceAgent": {
+    "Invoice Agent": {
       "type": "agent",
+      "localPath": "agents/",
       "dev": { "id": "YbM4pqxRD0AnOVhb", "status": "active" },
       "prod": { "id": "[new-prod-id]", "status": "reserved" }
     },
-    "BillingBotMVP": {
+    "Billing Bot MVP": {
       "type": "agent",
+      "localPath": "agents/",
       "dev": { "id": "[existing-id]", "status": "active" },
       "prod": { "id": "[new-prod-id]", "status": "reserved" }
     },
-    "ListInvoices": {
+    "List Invoices": {
       "type": "tool",
+      "localPath": "tools/",
       "dev": { "id": "pnfqaPMDG9PohkBi", "status": "active" },
       "prod": { "id": "[new-prod-id]", "status": "reserved" }
     }
-    // ... etc
   }
 }
 ```
+
+**External dependencies:** If any workflow references cross-project workflows (e.g., a shared lookup tool from another n8n project), those should be recorded in `externalDependencies`. External workflow IDs are left untouched during promotion—they use the same ID in both DEV and PROD.
 
 ---
 
@@ -163,19 +169,19 @@ Rename existing workflows to follow the naming convention.
 ### Step 3.1: Update DEV Workflows in n8n
 
 For each existing workflow, rename to:
-- `Invoice Agent` → `DEV-BillingBot-InvoiceAgent`
-- `Billing Bot MVP` → `DEV-BillingBot-MVP`
-- `List Invoices` → `DEV-BillingBot-ListInvoices`
+- `Invoice Agent` → `DEV-Invoice Agent`
+- `Billing Bot MVP` → `DEV-Billing Bot MVP`
+- `List Invoices` → `DEV-List Invoices`
 - etc.
 
 This can be done via MCP or manually in n8n UI.
 
 ### Step 3.2: Update PROD Slot Names
 
-Rename the empty PROD slots:
-- → `PROD-BillingBot-InvoiceAgent`
-- → `PROD-BillingBot-MVP`
-- → `PROD-BillingBot-ListInvoices`
+Rename the empty PROD slots to their real names (no prefix):
+- → `Invoice Agent`
+- → `Billing Bot MVP`
+- → `List Invoices`
 - etc.
 
 ---
@@ -188,7 +194,7 @@ Rename the empty PROD slots:
 User: "Pull DEV Invoice Agent"
 ```
 
-**Expected:** Workflow saved to `agents/DEV-BillingBot-InvoiceAgent.json`
+**Expected:** Workflow saved to `agents/DEV-Invoice Agent.json`
 
 ### Step 4.2: Make a Small Change
 
@@ -221,7 +227,7 @@ User: "Promote List Invoices to prod"
 ### Step 5.2: Review Transformation Report
 
 The AI should show:
-- Name transformation: DEV → PROD
+- Name transformation: DEV- prefix stripped (DEV-List Invoices → List Invoices)
 - ID transformation: dev ID → prod ID
 - No tool references (simple workflow)
 
@@ -231,7 +237,7 @@ Type "confirm" to execute the promotion.
 
 ### Step 5.4: Verify in n8n
 
-1. Open `PROD-BillingBot-ListInvoices` in n8n
+1. Open `List Invoices` (PROD) in n8n
 2. Verify content matches DEV version
 3. Verify workflow name is correct
 
@@ -250,16 +256,18 @@ User: "Promote Invoice Agent to prod"
 ### Step 6.2: Review Transformation Report
 
 Should show:
-- Name transformation
+- Name transformation (DEV-Invoice Agent → Invoice Agent)
 - Multiple tool reference transformations (List Invoices, Get Totals, etc.)
 - Credential transformations (if any)
+- External references (if any) left unchanged
 
 ### Step 6.3: Verify All References Transformed
 
-After promotion, open `PROD-BillingBot-InvoiceAgent` in n8n:
+After promotion, open `Invoice Agent` (PROD) in n8n:
 1. Check each tool node
-2. Verify workflowId points to PROD versions
-3. Test the workflow to ensure tools are called correctly
+2. Verify workflowId points to PROD versions (in-project refs)
+3. Verify external workflow references (if any) are unchanged
+4. Test the workflow to ensure tools are called correctly
 
 ---
 
@@ -272,7 +280,7 @@ After promotion, open `PROD-BillingBot-InvoiceAgent` in n8n:
 - [ ] Can push local changes to DEV
 - [ ] Can promote simple workflow (no refs) to PROD
 - [ ] Can promote complex workflow (with refs) to PROD
-- [ ] All IDs transformed correctly during promotion
+- [ ] All in-project IDs transformed correctly during promotion
 
 ### Should Have
 - [ ] Backup created before PROD updates
@@ -294,7 +302,7 @@ After promotion, open `PROD-BillingBot-InvoiceAgent` in n8n:
 **Solution:** Reserve PROD slot for the referenced workflow first, then retry promotion.
 
 ### Problem: Promotion succeeded but workflow doesn't work
-**Solution:** Check that all tool references point to PROD IDs. Verify credentials are correct for PROD.
+**Solution:** Check that all in-project tool references point to PROD IDs. Verify external references are correct. Verify credentials are correct for PROD.
 
 ---
 
