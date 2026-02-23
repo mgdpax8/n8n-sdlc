@@ -13,17 +13,34 @@ The primary entry point for onboarding an n8n project into the SDLC system. Give
 - n8n MCP server must be available
 - User must know their n8n project ID (from any workflow URL: `projectId=...`)
 
-## Step 0: Initialize Config (if needed)
+## Step 0: Initialize Project
 
-If `config/project.json` does NOT exist, create it automatically:
+If `config/project.json` does NOT exist, set up the project:
 
 1. The user must provide `n8nProjectId` (required). They can pass it inline: "Import my project, ID is xyz"
-2. Optionally ask for a display name (`projectName`). If not provided, leave empty or derive later.
+
+2. Ask if they want defaults or custom storage:
+   ```
+   Quick setup: Do you want to use defaults, or choose where workflow files are stored?
+
+   1. Use defaults -- workflow files go in agents/ and tools/ at the workspace root
+   2. Choose a folder -- specify a base directory for all workflow files
+   ```
+
+   If the user chooses a custom folder, ask for the path:
+   ```
+   What folder should I store workflow files in?
+   (e.g., "workflows/", "src/n8n/", "my-project/")
+
+   I'll create agents/ and tools/ subfolders inside it.
+   ```
+
 3. Create `config/project.json`:
    ```json
    {
      "n8nProjectId": "{provided project ID}",
      "projectName": "",
+     "workflowsDir": "",
      "naming": { "devPrefix": "DEV-" },
      "folderStrategy": { "mode": "flat", "dedicatedTools": "flat" },
      "tags": { "dev": ["environment:dev"], "prod": ["environment:prod"] },
@@ -32,6 +49,8 @@ If `config/project.json` does NOT exist, create it automatically:
      "version": "2.0"
    }
    ```
+   Set `workflowsDir` to the user's chosen path (e.g., `"workflows/"`) or `""` for default.
+
 4. Create `config/id-mappings.json`:
    ```json
    {
@@ -46,40 +65,14 @@ If `config/project.json` does NOT exist, create it automatically:
      }
    }
    ```
-5. Create directories (see Step 0.5 below).
 
-If config files already exist, read them and continue.
+5. Create directories:
+   - If `workflowsDir` is set: create `{workflowsDir}agents/` and `{workflowsDir}tools/`
+   - If default: create `agents/` and `tools/` at workspace root
 
-## Step 0.5: Ask Where to Store Workflows
+All `localPath` values in id-mappings will be prefixed with `workflowsDir` (e.g., `workflows/agents/` instead of `agents/`).
 
-Before discovering anything, ask the user where they want workflow JSON files stored:
-
-```
-Where would you like to store the workflow files pulled from n8n?
-
-Default is the current workspace root with agents/ and tools/ subfolders.
-You can specify a different base path (e.g., "workflows/", "src/n8n/").
-
-Examples:
-  - (default)  -> agents/Support Agent.json, tools/List Invoices.json
-  - workflows/ -> workflows/agents/Support Agent.json, workflows/tools/List Invoices.json
-  - src/n8n/   -> src/n8n/agents/Support Agent.json, src/n8n/tools/List Invoices.json
-```
-
-If the user provides a custom base path:
-- Prepend it to all `localPath` values (e.g., `workflows/agents/` instead of `agents/`)
-- Create the base directory and `agents/` + `tools/` subdirectories inside it
-- Store the base path in `project.json` as `workflowsDir` for future reference
-
-If the user accepts the default, use `agents/` and `tools/` at the workspace root.
-
-Update `config/project.json` with the chosen path:
-```json
-{
-  "workflowsDir": "workflows/"
-}
-```
-If default (workspace root), `workflowsDir` is `""` or omitted.
+If config files already exist, read them and continue (use the existing `workflowsDir`).
 
 ## Discovery Modes
 
