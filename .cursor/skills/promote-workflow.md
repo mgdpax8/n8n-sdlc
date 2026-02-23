@@ -189,40 +189,61 @@ prodWorkflow.name = devWorkflow.name.replace("DEV-", "PROD-")
 // 3. Transform workflow ID
 prodWorkflow.id = idMappings[logicalName].prod.id
 
-// 4. Transform all workflowId references
+// 4. Strip pinData (prevent test data leaking to PROD)
+prodWorkflow.pinData = {}
+
+// 5. Transform all workflowId references
 for (node of prodWorkflow.nodes) {
   if (isWorkflowReferenceNode(node)) {
     devRefId = node.parameters.workflowId.value
-    // Find the mapping entry that has this dev ID
     mappingEntry = findMappingByDevId(devRefId)
-    // Replace with prod ID
     node.parameters.workflowId.value = mappingEntry.prod.id
+
+    // Strip cached list-mode metadata (n8n will re-populate)
+    if (node.parameters.workflowId.cachedResultUrl) {
+      delete node.parameters.workflowId.cachedResultUrl
+    }
+    if (node.parameters.workflowId.cachedResultName) {
+      delete node.parameters.workflowId.cachedResultName
+    }
   }
 }
 
-// 5. Transform credential IDs (if mapped)
+// 6. Transform credential IDs (if mapped in project.json)
+// Lookup direction: iterate credential aliases in project.json,
+// check if any node's credential ID matches the 'dev' value,
+// if so replace with the 'prod' value.
 for (node of prodWorkflow.nodes) {
   if (node.credentials) {
     for (credType of Object.keys(node.credentials)) {
       credId = node.credentials[credType].id
-      if (credentialMappings[credId]) {
-        node.credentials[credType].id = credentialMappings[credId].prod
+      for (alias of Object.keys(projectJson.credentials)) {
+        if (projectJson.credentials[alias].dev === credId) {
+          node.credentials[credType].id = projectJson.credentials[alias].prod
+        }
       }
     }
   }
 }
 
-// 6. Update tags (optional)
+// 7. Update tags (optional)
 prodWorkflow.tags = updateTagsForProd(prodWorkflow.tags)
 ```
 
 ### Step 10: Push to PROD via MCP
 
 ```
-MCP Command: update_workflow
+MCP Tool: n8n_update_full_workflow
 Parameters:
-  - workflow_id: {PROD ID from mappings}
-  - workflow_data: {transformed workflow JSON}
+  - id: {PROD ID from mappings}
+  - name: {transformed PROD workflow name}
+  - nodes: {transformed nodes array}
+  - connections: {connections object}
+  - settings: {settings object}
+
+IMPORTANT: If the PROD workflow is ACTIVE, this publishes immediately (goes live).
+If this is a first-time promotion (PROD slot was inactive), the workflow will be
+saved but NOT published. User must manually activate/publish in n8n UI.
 ```
 
 ### Step 11: Verify Promotion Success
@@ -232,6 +253,42 @@ Parameters:
 2. Pull PROD workflow back from n8n
 3. Verify key transformations were applied
 4. Compare expected vs actual
+```
+
+### Step 11.5: Post-Promotion Validation
+
+Run n8n's built-in validation on the promoted PROD workflow:
+
+```
+MCP Tool: n8n_validate_workflow
+Parameters:
+  - id: {PROD workflow ID}
+  - options:
+      profile: "strict"
+      validateNodes: true
+      validateConnections: true
+      validateExpressions: true
+```
+
+Report the results:
+
+**If valid with no errors:**
+```
+✅ Post-promotion validation passed (0 errors, {N} warnings)
+```
+
+**If errors found:**
+```
+⚠️ Post-promotion validation found issues:
+
+Errors:
+  {list errors}
+
+Warnings:
+  {list warnings}
+
+The workflow was pushed but may have issues. Review the errors above.
+Consider rolling back if critical errors are present.
 ```
 
 ### Step 12: Update Audit Trail
@@ -254,7 +311,24 @@ Update `config/id-mappings.json`:
 }
 ```
 
-### Step 13: Confirm Completion
+### Step 13: Check Activation State
+
+After pushing, check whether the PROD workflow was active or inactive:
+
+**If PROD was already active (published):**
+```
+⚠️ The PROD workflow was ACTIVE. The update has been PUBLISHED IMMEDIATELY.
+Changes are now live. Please verify in n8n.
+```
+
+**If PROD was inactive (first-time promotion or unpublished):**
+```
+ℹ️ The PROD workflow is currently INACTIVE (not published).
+The content has been saved but is NOT live yet.
+To make it live, you must activate/publish it manually in the n8n UI.
+```
+
+### Step 14: Confirm Completion
 
 ```
 ✅ PROMOTION SUCCESSFUL
@@ -266,6 +340,8 @@ Target: PROD-BillingBot-InvoiceAgent
 Transformations Applied:
 - Workflow name: ✓
 - Workflow ID: ✓
+- pinData stripped: ✓
+- cachedResult metadata stripped: ✓
 - 3 tool references: ✓
 - 1 credential mapping: ✓
 

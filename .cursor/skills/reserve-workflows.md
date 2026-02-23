@@ -76,7 +76,7 @@ Wait for user to confirm they've created the workflows.
 Use the n8n MCP server to list/pull workflows:
 
 ```
-Use n8n MCP: list_workflows with projectId from config/project.json (n8nProjectId).
+Use n8n MCP: n8n_list_workflows with projectId from config/project.json (n8nProjectId).
 Filter by: 
   - Empty or minimal content
   - Recently created (createdAt)
@@ -99,7 +99,7 @@ I found these workflows that might be your new empty slots:
 Please confirm these are the correct workflows you just created.
 ```
 
-After resolving each workflow ID, call get_workflow; if `data.shared[0].projectId` does not match `config/project.json` n8nProjectId, exclude that workflow from the list and do not allow claim (workflow is not in the locked project).
+After resolving each workflow ID, call `n8n_get_workflow` (mode: "full"); if `data.shared[0].projectId` does not match `config/project.json` n8nProjectId, exclude that workflow from the list and do not allow claim (workflow is not in the locked project). Use `nodeCount` from the list response to identify empty slots (nodeCount of 0 or 1 = empty/minimal).
 
 ### Step 7: Claim Slots for Specific Workflows
 
@@ -222,9 +222,9 @@ Before claiming:
 ## MCP Commands Used
 
 This skill uses the following n8n MCP operations:
-- `list_workflows` - Get all workflows
-- `get_workflow` - Get specific workflow by ID
-- `update_workflow` - Rename workflows after claiming
+- `n8n_list_workflows` - List workflows (always pass `projectId`). Returns id, name, active, createdAt, updatedAt, tags, nodeCount.
+- `n8n_get_workflow` - Get specific workflow by ID (mode: "full" to verify `shared[0].projectId`)
+- `n8n_update_partial_workflow` - Rename workflows after claiming (use `updateName` operation)
 
 ## Related Skills
 

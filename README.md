@@ -1,6 +1,6 @@
 # n8n SDLC System
 
-A lightweight Software Development Lifecycle (SDLC) system for managing n8n workflows with dev/prod separation.
+A portable, lightweight Software Development Lifecycle (SDLC) framework for managing n8n workflows with dev/prod separation. Pull this into any n8n project workspace to enable version-controlled SDLC.
 
 ## Overview
 
@@ -8,7 +8,10 @@ This system enables safe development of n8n workflows by providing:
 - **Dev/Prod separation** within a single n8n instance
 - **Automated ID transformation** during promotion
 - **Safety checks** to prevent accidental production changes
+- **Drift detection** before pushing changes
+- **Rollback** via n8n version history
 - **Audit trail** for tracking changes
+- **Portability** -- any team member can use this with any n8n project
 
 ## Quick Start
 
@@ -32,8 +35,9 @@ This system enables safe development of n8n workflows by providing:
 | Document | Description |
 |----------|-------------|
 | [PRD](docs/n8n-SDLC-PRD.md) | Product Requirements Document |
-| [MCP Test Plan](docs/MCP-Test-Plan.md) | Tests to run when MCP is enabled |
+| [MCP Test Plan](docs/MCP-Test-Plan.md) | MCP behavior tests and results |
 | [Pilot Guide](docs/Pilot-Guide-BillingBot.md) | Walkthrough using Billing Bot |
+| [Team Onboarding](docs/Team-Onboarding.md) | Setup guide for new team members |
 
 ## Skills Reference
 
@@ -42,15 +46,18 @@ This system enables safe development of n8n workflows by providing:
 | `n8n-getting-started` | Initialize a new project |
 | `reserve-workflows` | Reserve and claim workflow slots |
 | `pull-workflow` | Fetch workflow from n8n |
-| `push-workflow` | Update workflow in n8n |
+| `push-workflow` | Update workflow in n8n (with drift detection) |
 | `promote-workflow` | Promote DEV to PROD with ID transformation |
 | `validate-workflow` | Pre-flight validation checks |
+| `rollback-workflow` | Rollback using n8n version history |
+| `diff-workflow` | Compare local vs remote, detect drift |
+| `project-status` | Dashboard of all workflow states |
 
 ## Rules Reference
 
 | Rule | Purpose |
 |------|---------|
-| `n8n-sdlc` | Conventions, safety checks, forbidden actions |
+| `n8n-sdlc` | Conventions, safety checks, MCP tool reference, forbidden actions |
 | `n8n-workflow-structure` | n8n JSON format and transformation logic |
 
 ## Directory Structure

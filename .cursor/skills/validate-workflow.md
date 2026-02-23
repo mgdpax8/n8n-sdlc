@@ -61,7 +61,7 @@ If missing:
 
 **Check 1.4: Workflow in configured project (when validating workflow from n8n)**
 ```
-When the workflow was fetched from n8n (get_workflow by ID):
+When the workflow was fetched from n8n (n8n_get_workflow with mode: "full"):
 Compare data.shared[0].projectId to config/project.json n8nProjectId.
 
 If they do not match:

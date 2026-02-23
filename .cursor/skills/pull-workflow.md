@@ -62,9 +62,10 @@ Run the validation skill checks:
 Use n8n MCP to fetch the workflow:
 
 ```
-MCP Command: get_workflow
+MCP Tool: n8n_get_workflow
 Parameters:
-  - workflow_id: {resolved workflow ID}
+  - id: {resolved workflow ID}
+  - mode: "full"
 ```
 
 After fetching, verify the workflow is in the locked project: `data.shared[0].projectId` must equal `config/project.json` n8nProjectId. If it does not match, refuse the pull and tell the user the workflow is not in the configured project.
@@ -128,7 +129,7 @@ Write the workflow JSON to the determined path:
 
 ### Step 8: Update Audit Trail
 
-Update `config/id-mappings.json` with pull timestamp:
+Update `config/id-mappings.json` with pull timestamp and versionId (for drift detection):
 
 ```json
 {
@@ -139,7 +140,8 @@ Update `config/id-mappings.json` with pull timestamp:
       "status": "active"
     },
     "audit": {
-      "lastLocalPull": "2026-02-05T15:30:00Z"  // ← Update this
+      "lastLocalPull": "2026-02-05T15:30:00Z",  // ← Update this
+      "lastVersionId": "784c01e4-082e-4c96-..."  // ← Save versionId from n8n response
     }
   }
 }
@@ -192,8 +194,8 @@ Which workflows would you like to pull?
 
 ## MCP Commands Used
 
-- `get_workflow` - Fetch workflow by ID
-- `list_workflows` - List workflows; always pass `projectId` from config/project.json (n8nProjectId)
+- `n8n_get_workflow` - Fetch workflow by ID (mode: "full" for complete data including `shared[0].projectId`)
+- `n8n_list_workflows` - List workflows; always pass `projectId` from config/project.json (n8nProjectId)
 
 ## Special Cases
 

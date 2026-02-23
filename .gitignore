@@ -1,6 +1,18 @@
-# Project config (contains instance-specific IDs and credentials)
+# Per-project config (created by getting-started skill, instance-specific)
 config/project.json
 config/id-mappings.json
+
+# Workflow JSON files (pulled from n8n, instance-specific)
+agents/*.json
+tools/*.json
+!agents/.gitkeep
+!tools/.gitkeep
+
+# Workflow backups (generated during promotions)
+**/*.backup.*.json
+
+# Secrets
+config/secrets.json
 
 # OS files
 Thumbs.db

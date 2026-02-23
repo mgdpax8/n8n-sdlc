@@ -66,9 +66,27 @@ This is the ONLY way to get workflows into the correct n8n folder.
 
 ## Project Scoping (MCP Lock to One Project)
 
-When calling n8n MCP `list_workflows`, **always** pass `projectId` from `config/project.json` (`n8nProjectId`). Never list all workflows without this filter.
+When calling `n8n_list_workflows`, **always** pass `projectId` from `config/project.json` (`n8nProjectId`). Never list all workflows without this filter.
 
-Before any **update_workflow**, **delete_workflow**, or **push** to an n8n workflow by ID: get the workflow once (e.g. `get_workflow` with mode full); verify `data.shared[0].projectId` equals `config/project.json`'s `n8nProjectId`. If it does not match, refuse the operation and tell the user the workflow is not in the locked project.
+Before any `n8n_update_full_workflow`, `n8n_update_partial_workflow`, or **push** to an n8n workflow by ID: get the workflow once via `n8n_get_workflow` (mode: "full"); verify `data.shared[0].projectId` equals `config/project.json`'s `n8nProjectId`. If it does not match, refuse the operation and tell the user the workflow is not in the locked project.
+
+## MCP Update Behavior (Tested 2026-02-23)
+
+- **Active (published) workflows:** `n8n_update_full_workflow` and `n8n_update_partial_workflow` publish changes **immediately** -- they go live the instant the call completes. This differs from the n8n UI canvas, which autosaves without publishing.
+- **Inactive (unpublished) workflows:** MCP updates save changes only (like autosave). No publish occurs.
+- **MCP cannot activate or deactivate workflows.** First-time PROD promotions (inactive slot) require manual activation in n8n UI.
+
+## Available MCP Tools
+
+| Tool | Purpose | Key Parameters |
+|------|---------|----------------|
+| `n8n_list_workflows` | List workflows (metadata only) | `projectId`, `limit`, `active`, `tags` |
+| `n8n_get_workflow` | Get workflow by ID | `id`, `mode` (full/details/structure/minimal) |
+| `n8n_update_full_workflow` | Full workflow replacement | `id`, `name`, `nodes`, `connections`, `settings` |
+| `n8n_update_partial_workflow` | Incremental updates (rename, add/remove node) | `id`, `operations[]` |
+| `n8n_validate_workflow` | Validate workflow in n8n | `id`, `options.profile` (strict recommended) |
+| `n8n_workflow_versions` | Version history and rollback | `mode`, `workflowId` |
+| `n8n_create_workflow` | Create workflow (NEVER USE -- goes to Personal) | `name`, `nodes`, `connections` |
 
 ## Safety Checks - ALWAYS Perform
 

@@ -52,6 +52,40 @@ Call the `validate-workflow` skill checks:
 
 **If validation fails, STOP and report errors.**
 
+### Step 3.5: Drift Detection (Version Check)
+
+Before pushing, check if the remote workflow has been modified since last pull:
+
+```
+1. Call n8n_get_workflow(id: targetId, mode: "minimal") to get current remote versionId
+2. Compare against audit.lastVersionId in id-mappings.json (saved during last pull/push)
+3. If they differ: someone else has modified the workflow in n8n since our last sync
+```
+
+**If drift detected:**
+```
+⚠️ REMOTE DRIFT DETECTED
+
+The workflow in n8n has been modified since your last pull/push.
+
+  Local versionId:  {lastVersionId from id-mappings}
+  Remote versionId: {current versionId from n8n}
+
+Someone may have edited this workflow in the n8n UI.
+Pushing now would overwrite their changes.
+
+Options:
+1. Pull the latest version first (recommended)
+2. Push anyway (overwrites remote changes)
+3. Cancel
+
+What would you like to do?
+```
+
+**If no lastVersionId in audit:** Skip this check (first push, no baseline to compare against).
+
+After a successful push, always update `audit.lastVersionId` in id-mappings.json with the new versionId from the push response or a subsequent get.
+
 ### Step 4: Detect Environment and Apply Safety
 
 Parse environment from workflow name:
@@ -73,6 +107,9 @@ if (workflowName.startsWith("DEV-")) {
 
 If `environment === "prod"`:
 
+First, check if the target PROD workflow is active by calling `n8n_get_workflow` (mode: "minimal") and reading the `active` field.
+
+**If PROD workflow is ACTIVE:**
 ```
 ⚠️ PRODUCTION UPDATE WARNING ⚠️
 
@@ -80,8 +117,29 @@ You are about to update a PRODUCTION workflow:
 
   Workflow: PROD-BillingBot-InvoiceAgent
   Target ID: xyz789ProdId
+  Status: ACTIVE (published)
   
-This will affect LIVE systems.
+⚠️ This update will PUBLISH IMMEDIATELY -- changes go live instantly.
+
+Before proceeding, I will:
+1. Pull current PROD version as backup
+2. Push your local version to n8n (goes live immediately)
+
+Type "confirm" to proceed, or anything else to cancel.
+```
+
+**If PROD workflow is INACTIVE:**
+```
+⚠️ PRODUCTION UPDATE WARNING ⚠️
+
+You are about to update a PRODUCTION workflow:
+
+  Workflow: PROD-BillingBot-InvoiceAgent
+  Target ID: xyz789ProdId
+  Status: INACTIVE (not published)
+  
+This will save the workflow but NOT publish it.
+You will need to activate/publish manually in n8n UI.
 
 Before proceeding, I will:
 1. Pull current PROD version as backup
@@ -141,10 +199,17 @@ Ensure the workflow JSON has the correct ID:
 Use n8n MCP to update the workflow:
 
 ```
-MCP Command: update_workflow
+MCP Tool: n8n_update_full_workflow
 Parameters:
-  - workflow_id: {target ID}
-  - workflow_data: {local JSON content}
+  - id: {target ID}
+  - name: {workflow name}
+  - nodes: {nodes array from local JSON}
+  - connections: {connections object from local JSON}
+  - settings: {settings object from local JSON}
+
+Note: n8n_update_full_workflow requires the complete nodes[] and connections{}.
+If the target workflow is ACTIVE, this update publishes immediately (goes live).
+If the target workflow is INACTIVE, this update saves only (like autosave).
 ```
 
 ### Step 10: Verify Push Success
@@ -223,8 +288,8 @@ Backup saved: agents/PROD-BillingBot-InvoiceAgent.backup.2026-02-05T16-00-00.jso
 
 ## MCP Commands Used
 
-- `update_workflow` - Push workflow content to n8n
-- `get_workflow` - Pull current state for backup (PROD only)
+- `n8n_update_full_workflow` - Push complete workflow content to n8n (requires id, nodes, connections)
+- `n8n_get_workflow` - Pull current state for backup (PROD only; mode: "full")
 
 ## What Push Does NOT Do
 

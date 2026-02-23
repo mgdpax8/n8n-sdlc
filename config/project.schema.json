@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "n8n SDLC Project Configuration",
+  "description": "Project-level configuration for the n8n SDLC system. Created by the getting-started skill or manually from project.json.template.",
+  "type": "object",
+  "required": ["projectName", "n8nFolder", "n8nProjectId", "naming", "version"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "$comment": {
+      "type": "string"
+    },
+    "projectName": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Z][a-zA-Z0-9]+$",
+      "description": "PascalCase project name used in workflow naming: {ENV}-{ProjectName}-{WorkflowName}"
+    },
+    "n8nFolder": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Exact folder name in n8n UI where workflows live. MCP cannot see or verify folders, so this is for human reference only."
+    },
+    "n8nProjectId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "n8n project ID from the workflow URL (projectId=...). Used to lock all MCP operations to this project via n8n_list_workflows and verified via n8n_get_workflow shared[0].projectId."
+    },
+    "naming": {
+      "type": "object",
+      "required": ["devPrefix", "prodPrefix", "separator"],
+      "properties": {
+        "devPrefix": {
+          "type": "string",
+          "default": "DEV-",
+          "description": "Prefix for development workflow names"
+        },
+        "prodPrefix": {
+          "type": "string",
+          "default": "PROD-",
+          "description": "Prefix for production workflow names"
+        },
+        "separator": {
+          "type": "string",
+          "default": "-",
+          "description": "Separator between naming components"
+        }
+      },
+      "additionalProperties": false
+    },
+    "tags": {
+      "type": "object",
+      "properties": {
+        "dev": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Tags applied to DEV workflows"
+        },
+        "prod": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Tags applied to PROD workflows"
+        }
+      },
+      "additionalProperties": false
+    },
+    "credentials": {
+      "type": "object",
+      "description": "Map credential aliases to their environment-specific n8n IDs. Only for credentials that differ between dev and prod. During promotion, iterate aliases and replace any node credential whose ID matches the 'dev' value with the 'prod' value.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["dev", "prod"],
+        "properties": {
+          "dev": {
+            "type": "string",
+            "description": "n8n credential ID for dev environment"
+          },
+          "prod": {
+            "type": "string",
+            "description": "n8n credential ID for prod environment"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when this project was initialized"
+    },
+    "version": {
+      "type": "string",
+      "description": "Schema version for forward compatibility"
+    }
+  },
+  "additionalProperties": false
+}
