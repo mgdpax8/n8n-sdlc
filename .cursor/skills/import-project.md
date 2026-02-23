@@ -46,9 +46,40 @@ If `config/project.json` does NOT exist, create it automatically:
      }
    }
    ```
-5. Create `agents/` and `tools/` directories if they don't exist.
+5. Create directories (see Step 0.5 below).
 
 If config files already exist, read them and continue.
+
+## Step 0.5: Ask Where to Store Workflows
+
+Before discovering anything, ask the user where they want workflow JSON files stored:
+
+```
+Where would you like to store the workflow files pulled from n8n?
+
+Default is the current workspace root with agents/ and tools/ subfolders.
+You can specify a different base path (e.g., "workflows/", "src/n8n/").
+
+Examples:
+  - (default)  -> agents/Support Agent.json, tools/List Invoices.json
+  - workflows/ -> workflows/agents/Support Agent.json, workflows/tools/List Invoices.json
+  - src/n8n/   -> src/n8n/agents/Support Agent.json, src/n8n/tools/List Invoices.json
+```
+
+If the user provides a custom base path:
+- Prepend it to all `localPath` values (e.g., `workflows/agents/` instead of `agents/`)
+- Create the base directory and `agents/` + `tools/` subdirectories inside it
+- Store the base path in `project.json` as `workflowsDir` for future reference
+
+If the user accepts the default, use `agents/` and `tools/` at the workspace root.
+
+Update `config/project.json` with the chosen path:
+```json
+{
+  "workflowsDir": "workflows/"
+}
+```
+If default (workspace root), `workflowsDir` is `""` or omitted.
 
 ## Discovery Modes
 

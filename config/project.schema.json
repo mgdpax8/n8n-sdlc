@@ -32,6 +32,11 @@
       },
       "additionalProperties": false
     },
+    "workflowsDir": {
+      "type": "string",
+      "default": "",
+      "description": "Base directory for workflow JSON files, relative to workspace root. Empty string or omitted means workspace root (agents/ and tools/ at top level). Example: 'workflows/' stores files under workflows/agents/ and workflows/tools/."
+    },
     "folderStrategy": {
       "type": "object",
       "description": "Controls how workflow JSON files are organized locally. Set during import-project or getting-started.",
