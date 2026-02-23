@@ -38,8 +38,6 @@ If missing:
 **Check 1.2: project.json is valid**
 ```
 Required fields:
-- projectName (non-empty string)
-- n8nFolder (non-empty string)
 - n8nProjectId (non-empty string; from workflow URL projectId=...; locks MCP to this project)
 - naming.devPrefix (typically "DEV-"; from config/project.json)
 

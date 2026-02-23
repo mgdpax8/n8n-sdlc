@@ -1,8 +1,7 @@
 {
   "$schema": "./project.schema.json",
-  "$comment": "This is a TEMPLATE file. Copy to project.json and fill in your values, or use the 'getting started' skill.",
+  "$comment": "This is a TEMPLATE file. Copy to project.json and fill in your values, or say 'import my project'.",
   "projectName": "My Project",
-  "n8nFolder": "My n8n Folder Name",
   "n8nProjectId": "",
   "naming": {
     "devPrefix": "DEV-"

@@ -17,22 +17,27 @@ This system enables safe development of n8n workflows by providing:
 
 ## Quick Start
 
-1. **Initialize a new project:**
+1. **Import your project (one command):**
    ```
-   Say: "Set up n8n project"
+   Say: "Import my project, ID is <your n8n project ID>"
    ```
+   Get the project ID from any workflow URL in n8n (`projectId=...`).
+   This creates config, discovers all your workflows, and registers them.
 
-2. **Reserve workflow slots:**
+2. **Create DEV slots:**
    ```
    Say: "Reserve workflows"
    ```
 
-3. **Develop in DEV, promote to PROD:**
+3. **Populate DEV from PROD:**
+   ```
+   Say: "Seed dev"
+   ```
+
+4. **Develop in DEV, promote to PROD:**
    ```
    Say: "Promote [workflow name] to prod"
    ```
-
-**Already have workflows?** Say **"Import my project"** to discover and register existing workflows into the SDLC system.
 
 ## Documentation
 

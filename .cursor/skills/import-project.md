@@ -1,19 +1,54 @@
 # Skill: Import Project
 
-Discover and register existing n8n workflows into the SDLC system.
+The primary entry point for onboarding an n8n project into the SDLC system. Give it a project ID and it handles everything: creates config files, discovers workflows, builds the dependency graph, and registers them.
 
 ## When to Use
 
-- Onboarding existing workflows into the SDLC (brownfield scenario)
-- User says "import project", "import workflows", "onboard existing workflows", "set up SDLC for my workflows"
-- After running "getting started" when the user already has workflows in n8n
+- First time setting up SDLC for a project (most common entry point)
+- User says "import my project", "import project with ID xyz", "set up SDLC", "onboard my workflows"
+- User provides an n8n project ID
 
 ## Prerequisites
 
-- `config/project.json` must exist (run Getting Started first)
-- `config/id-mappings.json` must exist (even if empty)
 - n8n MCP server must be available
-- User must have workflows in the locked n8n project
+- User must know their n8n project ID (from any workflow URL: `projectId=...`)
+
+## Step 0: Initialize Config (if needed)
+
+If `config/project.json` does NOT exist, create it automatically:
+
+1. The user must provide `n8nProjectId` (required). They can pass it inline: "Import my project, ID is xyz"
+2. Optionally ask for a display name (`projectName`). If not provided, leave empty or derive later.
+3. Create `config/project.json`:
+   ```json
+   {
+     "n8nProjectId": "{provided project ID}",
+     "projectName": "",
+     "naming": { "devPrefix": "DEV-" },
+     "folderStrategy": { "mode": "flat", "dedicatedTools": "flat" },
+     "tags": { "dev": ["environment:dev"], "prod": ["environment:prod"] },
+     "credentials": {},
+     "createdAt": "{ISO timestamp}",
+     "version": "2.0"
+   }
+   ```
+4. Create `config/id-mappings.json`:
+   ```json
+   {
+     "workflows": {},
+     "externalDependencies": {},
+     "reservedSlots": [],
+     "credentials": {},
+     "metadata": {
+       "projectName": "",
+       "createdAt": "{ISO timestamp}",
+       "lastModified": "{ISO timestamp}"
+     }
+   }
+   ```
+5. Create `agents/` and `tools/` directories if they don't exist.
+
+If config files already exist, read them and continue.
 
 ## Discovery Modes
 
@@ -308,7 +343,7 @@ You have {N} production workflows registered. To enable the
 DEV/PROD workflow, you need {N} empty DEV slots.
 
 Please go to n8n and create {N} empty workflows in your
-project folder ("{n8nFolder}").
+project folder.
 
 Name suggestions (or use any names -- they'll be renamed):
   1. DEV slot 1

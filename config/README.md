@@ -34,9 +34,9 @@ The `.template` files show the expected structure with examples:
 
 ## Usage
 
-1. Run the **Getting Started** skill to create these files automatically
-2. Or copy the templates and fill in your values manually
-3. For existing workflows, run **Import Project** to auto-discover and register them
+1. Say **"Import my project, ID is xyz"** -- creates config and discovers workflows in one step
+2. Or run the **Getting Started** skill for manual setup
+3. Or copy the templates and fill in your values manually
 
 ## Version Control Strategy
 

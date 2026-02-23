@@ -134,9 +134,8 @@ Each workflow's `localPath` in id-mappings points to its folder (e.g., `agents/`
 ## Step 5: Review the Configuration
 
 Check `config/project.json` to understand the project setup:
-- **projectName**: Display purposes only (dashboards, logs). Not used in workflow names.
 - **n8nProjectId**: Locks all MCP operations to this n8n project
-- **n8nFolder**: The folder in n8n where workflows live (MCP cannot verify this)
+- **projectName**: Optional display name (dashboards, logs). Not used in workflow names.
 
 Check `config/id-mappings.json` to see which workflows are registered:
 - Each workflow has a DEV and PROD slot with n8n IDs

@@ -56,8 +56,7 @@ For each registered workflow, compare:
 ═══════════════════════════════════════════════════════════════════
 
 Project: {projectName}
-n8n Project: {n8nProjectId}
-Folder: {n8nFolder} (not verifiable via MCP)
+n8n Project ID: {n8nProjectId}
 Total Workflows: {count}
 
 WORKFLOW STATUS:

@@ -57,7 +57,6 @@ Check that `config/project.json` looks correct:
 ```json
 {
   "projectName": "Billing Bot",
-  "n8nFolder": "AITO - Billing Bot",
   "naming": {
     "devPrefix": "DEV-"
   }

@@ -49,8 +49,6 @@ Workflow keys in `id-mappings.json` use the **PROD name** (the real name):
 Before performing ANY n8n operation, verify:
 
 1. `config/project.json` EXISTS and contains:
-   - `projectName` - non-empty string (display only, not used in workflow names)
-   - `n8nFolder` - non-empty string
    - `n8nProjectId` - non-empty string (from workflow URL: projectId=...); locks MCP to this project only
    - `naming.devPrefix` - typically "DEV-"
 

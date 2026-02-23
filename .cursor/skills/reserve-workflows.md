@@ -59,7 +59,7 @@ Tell the user:
 Please go to n8n and create {N} empty workflows:
 
 1. Go to your n8n instance
-2. Navigate to the "{n8nFolder}" folder (from project.json)
+2. Navigate to your project folder
 3. Create {N} new empty workflows
    - The names don't matter yet (you can call them "Slot 1", "Slot 2", etc.)
    - Just make sure they're in the correct folder!
