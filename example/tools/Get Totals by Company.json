@@ -1,0 +1,522 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8fe3a6f6-2c32-4a22-a3d9-f624e0a658bc",
+              "name": "partnerId",
+              "value": "={{ $('Input').item.json.partnerId }}",
+              "type": "string"
+            },
+            {
+              "id": "016a86ae-6873-42ef-8e32-8e145187c081",
+              "name": "invoiceDate",
+              "value": "={{ $('Input').item.json.invoiceDate }}",
+              "type": "string"
+            },
+            {
+              "id": "d4760c1d-5217-4aed-bb24-078713e16b0a",
+              "name": "searchField",
+              "value": "={{ $('Input').item.json.searchField }}",
+              "type": "string"
+            },
+            {
+              "id": "288f880e-bed4-43f2-ac72-1fd38182a311",
+              "name": "searchParam",
+              "value": "={{ $('Input').item.json.searchParam }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -672,
+        96
+      ],
+      "id": "021a10c6-ab19-482a-adc0-ad9d1d14cd0e",
+      "name": "Variables",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "url": "https://app.pax8.com/p8p/api-v1/invoice/1/getInvoiceRows?",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "partnerId",
+              "value": "={{ $json.partnerId }}"
+            },
+            {
+              "name": "invoiceDate",
+              "value": "={{ $json.invoiceDate }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -448,
+        96
+      ],
+      "id": "c9bea205-19c5-4f24-ab44-27d9a589e8d9",
+      "name": "Get Invoice Rows",
+      "alwaysOutputData": true,
+      "credentials": {
+        "oAuth2Api": {
+          "id": "UyMc4dkYbAN56KA5",
+          "name": "Marketplace - 12/11/2025T15:00"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "83b23c28-6206-4d51-94a7-bb5392c6dc58",
+              "leftValue": "={{ $json[$('Variables').item.json.searchField] }}",
+              "rightValue": "={{ $('Variables').item.json.searchParam }}",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {
+          "ignoreCase": true
+        }
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        224,
+        192
+      ],
+      "id": "36c098b7-5a3f-4b96-bfee-c08e608e96c8",
+      "name": "Filter",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "body.records",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        0,
+        192
+      ],
+      "id": "22205d45-90a1-4efc-9099-dd4370147792",
+      "name": "Split Out",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4f372e63-280e-47a8-a640-f44c50390fb7",
+              "name": "salesTax",
+              "value": "={{ $json.salesTax }}",
+              "type": "number"
+            },
+            {
+              "id": "27fed91e-270b-43fd-8870-df6a05f55a36",
+              "name": "total",
+              "value": "={{ $json.total }}",
+              "type": "number"
+            },
+            {
+              "id": "23f19e55-478b-4fcd-8950-0e60eac85c1f",
+              "name": "price",
+              "value": "={{ $json.price }}",
+              "type": "number"
+            },
+            {
+              "id": "e4519d94-73c3-4985-aec2-d4a0aae0fc8b",
+              "name": "quantity",
+              "value": "={{ $json.quantity }}",
+              "type": "number"
+            },
+            {
+              "id": "483a021f-449f-4a2a-9225-261f64c4723a",
+              "name": "cost",
+              "value": "={{ $json.cost }}",
+              "type": "number"
+            },
+            {
+              "id": "99686284-18e5-40c8-876a-24cb31ae2f4f",
+              "name": "billingFee",
+              "value": "={{ $json.billingFee }}",
+              "type": "number"
+            },
+            {
+              "id": "ffd47414-0b35-4394-8cbd-1c5a6d878d93",
+              "name": "costTotal",
+              "value": "={{ $json.costTotal }}",
+              "type": "number"
+            },
+            {
+              "id": "cd5c57a7-a33d-4553-8b36-1fe87cb5d822",
+              "name": "billingFeeRate",
+              "value": "={{ $json.billingFeeRate }}",
+              "type": "number"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        448,
+        192
+      ],
+      "id": "8d543688-1919-431b-8f60-cae2f008ba48",
+      "name": "Convert to Numbers",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "fieldsToSummarize": {
+          "values": [
+            {
+              "aggregation": "sum",
+              "field": "costTotal"
+            },
+            {
+              "aggregation": "sum",
+              "field": "salesTax"
+            },
+            {
+              "aggregation": "sum",
+              "field": "quantity"
+            },
+            {
+              "aggregation": "sum",
+              "field": "total"
+            }
+          ]
+        },
+        "fieldsToSplitBy": "companyName",
+        "options": {
+          "outputFormat": "separateItems"
+        }
+      },
+      "type": "n8n-nodes-base.summarize",
+      "typeVersion": 1.1,
+      "position": [
+        672,
+        192
+      ],
+      "id": "17a777f6-0ff5-4b77-b917-59690c07e7f9",
+      "name": "Summarize by Company",
+      "retryOnFail": true,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "totalsByCompany",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1088,
+        192
+      ],
+      "id": "19809d4d-3469-411c-a0a4-4906caff7586",
+      "name": "Aggregate Totals by Company",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "partnerId"
+            },
+            {
+              "name": "invoiceDate"
+            },
+            {
+              "name": "searchField"
+            },
+            {
+              "name": "searchParam"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -896,
+        96
+      ],
+      "id": "04c3d494-2772-4003-8350-087166de1650",
+      "name": "Input"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5b15b398-e061-402f-aa50-a71fa8186c99",
+              "name": "Output",
+              "value": "No records were found for the query.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "06cfdb1d-3d65-4000-b596-edd5bca7ac05",
+      "name": "Empty Output"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "096668bd-23d2-4f2d-8613-583277c6befb",
+              "leftValue": "={{ $json.body.totalRecordCount }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -224,
+        96
+      ],
+      "id": "78d16114-f1cb-43a8-b683-314f230bc184",
+      "name": "If 0 Records"
+    },
+    {
+      "parameters": {
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1280,
+        192
+      ],
+      "id": "5529e33c-5da1-4c6b-8f44-bb495f0f8a6a",
+      "name": "Output",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4c9cc680-44fc-4fe8-83f2-fc3fc9dbdf1c",
+              "name": "marginDollars",
+              "value": "={{ $json.sum_total - $json.sum_costTotal }}",
+              "type": "number"
+            },
+            {
+              "id": "e185aa28-daee-4779-8fb3-25985f71a0fe",
+              "name": "marginPercentage",
+              "value": "={{ $json.sum_total > 0 ? Number(((($json.sum_total - $json.sum_costTotal) / $json.sum_total) * 100).toFixed(2)) : 0 }}",
+              "type": "number"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        192
+      ],
+      "id": "0ef296f4-ed4e-49cc-8836-7594c43bf288",
+      "name": "Calculate Margin",
+      "alwaysOutputData": true
+    }
+  ],
+  "connections": {
+    "Variables": {
+      "main": [
+        [
+          {
+            "node": "Get Invoice Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Invoice Rows": {
+      "main": [
+        [
+          {
+            "node": "If 0 Records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Convert to Numbers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to Numbers": {
+      "main": [
+        [
+          {
+            "node": "Summarize by Company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize by Company": {
+      "main": [
+        [
+          {
+            "node": "Calculate Margin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Totals by Company": {
+      "main": [
+        [
+          {
+            "node": "Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input": {
+      "main": [
+        [
+          {
+            "node": "Variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If 0 Records": {
+      "main": [
+        [
+          {
+            "node": "Empty Output",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Margin": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Totals by Company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "Input": [
+      {
+        "partnerId": 903580,
+        "invoiceDate": "2025-12-01",
+        "searchField": "vendorName",
+        "searchParam": "Microsoft"
+      }
+    ]
+  },
+  "meta": {
+    "instanceId": "ff8bc74e685205366b7c1dbd5470d650b694ebd82b586124e988b6855aef7cb2"
+  }
+}

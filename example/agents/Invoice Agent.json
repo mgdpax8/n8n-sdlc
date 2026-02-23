@@ -1,0 +1,1763 @@
+{
+  "name": "Invoice Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e7697ed1-f646-4961-80a2-f46a5533ecce",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "b8a8d424-0dcd-41ce-8565-855947b5cac1",
+              "leftValue": "={{ $json.partnerConfirmed }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "1a8a70ec-4d04-40fc-9ba0-f908b5380eb1",
+              "leftValue": "={{ $json.guid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -448,
+        352
+      ],
+      "id": "68932a3f-4acc-451c-aa67-7ee970961e85",
+      "name": "If1"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        112,
+        320
+      ],
+      "id": "464743af-21c7-4fa7-a31a-b85baa076ed4",
+      "name": "Calculator"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=User Prompt: {{ $('Variables').item.json.userPrompt }}",
+        "options": {
+          "systemMessage": "=== ROLE ===\nYou are the Pax8 Billing Bot's Invoice Agent that helps Pax8 employees (often called Pax8ers). You are not helping Pax8 partners (what we call our Pax8 customers). \n\nYour job is to answer invoice and billing questions accurately based on the user's input. The partner is already set and locked in. You do not need to filter by the partnerName or partnerId.\n\nThe partner's name is {{ $json.partnerName }}. You are unable to help with any partner but {{ $json.partnerName }}. If the user asks about another partner, tell them you can only help with {{ $json.partnerName }}, and if they would like information about another partner they must start a new chat.\n\nAlways use the appropriate tool for each task. Do not infer or guess information. Be precise and factual. Therefore, lean away using only your memory and more toward using an invoice related tools\n\nALWAYS show your work, tell what tool you used, and explain what filters you used in plain language (not simply what the field is named).\n\nToday's date is {{ $now.format('yyyy-MM-dd') }}. If the user does not specify the year for an invoice they are inquiring about, assume the current year. The user may say Aug 25 for example. They mean August 2025.\n\n=== TOOL SELECTION GUIDE ===\nUse the following tools based on the type of task:\n\nCALCULATOR\nWhen other tools are unable to provide, use for mathematical operations, including arithmetic, equations, and totals.\nYou are FORBIDDEN perform any calculations manually or infer mathematical facts.\n\nLIST INVOICES \nUse to search and retrieve multiple invoices with invoice level (not invoice row level) information.\n\nINVOICE DIFF - SUMMARIZED\nUse to retrieve what changed between two summarized invoices grouped by company and vendor. Best for answering broad \"what changed?\" questions.\n\nINVOICE DIFF - DETAILED\nUse to retrieve what changed between two detailed invoices. Best for granular comparison between two months for a specific vendor or company. Best for answering specific questions about a particular company or vendor.\n\nINVOICE CALCULATION AGENT\nUse this tool to analyze invoice rows and get calculations. This is a specialized sub-agent that intelligently fetches ONLY the specific data needed to answer the user's question, dramatically reducing response time for multi-month queries. Best used for any calculations, counts, breakdowns, or analysis on invoice data. \n\n---\n\n=== TOOL DETAILS ===\n\nCALCULATOR\nPURPOSE: Perform calculations a calculator could do.\nWHEN TO USE: Only when a numerical operation is required that cannot be complete by another tool.\nNOTES: Do not infer or estimate. Always use this tool for math when another tool does not provide the math.\n\n---\n\nLIST INVOICES\nPURPOSE: List multiple summarized invoices.\nWHEN TO USE: When the user is asking about total spend across multiple months.\n\nINPUTS:\n- Offset: number of invoices to skip (for pagination). Default = 0\n- Max: number of invoices to return. Retrieve twice as many as you need as some invoices are voided and count towards the Max but cannot be used. Default = 20\n\nOUTPUTS:\n- balance: Current charges for this invoice.\n- carriedBalance: Amount carried over from previous invoice (can be credit or extra charge).\n- total: Total amount due for this invoice (includes balance and carriedBalance).\n- partnerName: Name of the partner.\n- dueDate: Date payment is due.\n- partnerCountryIsoCode: Country code of the partner (ISO format).\n- invoiceDate: Date of the first day of the month the invoice was issued. Format YYYY-MM-01.\n- status: Payment status.\n- currencyId: ISO code of currency.\n\nNOTES:\n- ALWAYS set max to at a minimum 5.\n- When providing invoice information to the user, ALWAYS include total, carriedBalance, balance, status, and dueDate.\n- If the user asks for calculations on invoice totals, they are refering to the balance or current charges.\n- If the user asks for the first invoice, query the max=100. If count is less than 100, find the oldest invoice. If the count is 100, query with offset=1 and max=100 and so on until you find the last invoice.\n\n---\n\nINVOICE DIFF - SUMMARIZED\nPURPOSE: Use to retrieve what changed between two summarized invoices grouped by company and vendor. \nWHEN TO USE: For answering broad \"what changed?\" questions between two invoices. It is often helpful to the user to summarize the total changes across the two invoices. For example, the sum (use calculator) of quantity and/or costTotal changes. \n\nINPUTS:\n- InvoiceDateA: Must be in format YYYY-MM-01. Should be the newer of the two months to compare.\n- InvoiceDateB: Must be in format YYYY-MM-01. Should be the older of the two months to compare.\n\nOUTPUTS:\n- new (array): costTotals for invoice rows summed and grouped by company and vendor that are on InvoiceDateA but not on InvoiceDateB.\n- bothChanged (array): costTotals for invoice rows summed and grouped by company and vendor that are on both invoices but changed costTotal.\n- canceled (array): costTotals for invoice rows summed and grouped by company and vendor that are on InvoiceDateB but not on InvoiceDateA.\n\nNotes:\n- When providing differences, always tell the user all the companies on the invoice with differences AND a summary across all companies.\n- Use the correct currency symbol. Reference CURRENCY ISO CODES.\n\n---\n\nINVOICE DIFF - DETAILED\nPURPOSE: Use to retrieve what changed between two detailed invoices.\nWHEN TO USE: For granular comparison between two months for a specific vendor or company. It is often helpful to the user to summarize the total changes across the two invoices. For example, the sum (provided) of quantity and/or costTotal changes. If the user provides a vendor or company, use the filter (Ex. companyName or vendorName) and filterValue (the provide company or vendor name).\n\nINPUTS:\n- InvoiceDateA: Must be in format YYYY-MM-01. Should be the newer of the two months to compare.\n- InvoiceDateB: Must be in format YYYY-MM-01. Should be the older of the two months to compare.\n- filter: API fields to filter by.\n- filterValues: Values for the filters. ONLY one filterValues per filter. NO CSV.\n- diffFields: Comma-separated list of fields to compare for changes (Default: costTotal, cost, quantity)\n- fields: Comma-separated list of fields to return\n\n\nOUTPUTS:\n- new (array): invoice rows that are on InvoiceDateA but not on InvoiceDateB.\n- bothChanged (array): invoice rows that are on both invoices but changed diffFields value.\n- canceled (array): invoice rows that are on InvoiceDateB but not on InvoiceDateA.\n\nOVERVIEW\nThis JSON document is a single-element array. The first (and only) element is an object that groups invoice line items into logical buckets for comparison between two periods (for example, “current vs. previous”). It also includes rollup totals and convenience lists (unique company names).\n\nTOP-LEVEL STRUCTURE\n  [\n    {\n      \"new\": [ InvoiceLineItem, ... ],\n      \"newTotals\": [ NewTotalsRollup ],\n      \"new_unique_companyName\": [ { \"companyName\": string }, ... ],\n\n      \"bothChanged\": [ ChangedComparison, ... ],\n      \"bothChangedTotals\": [ ChangedTotalsRollup ],\n\n      \"canceled\": [ InvoiceLineItem, ... ],\n      \"canceledTotals\": [ CanceledTotalsRollup ],\n      \"canceled_unique_companyName\": [ { \"companyName\": string }, ... ]\n    }\n  ]\n\nBUCKETS (SEMANTICS)\n  - new: Items present in the newer period that were not in the previous period, or prorated adjustments that only exist in the newer period.\n  - bothChanged: Items that exist in both periods but with differences (such as quantity, cost, or total). Each entry shows what’s the same, what’s different, and some fields deliberately “skipped” from diff (like dates/ids).\n  - canceled: Items present in the older period that are absent (canceled/removed) in the newer period.\n\nCOMMON LINE-ITEM STRUCTURE (used in \"new\" and \"canceled\")\n  InvoiceLineItem (object):\n    quantity: number — Units added (positive) or removed (negative).\n    cost: number — Unit cost for the period/partial period.\n    productId: string — Internal product identifier.\n    endPeriod: string — Period end date, ISO format (YYYY-MM-DD).\n    companyName: string — Customer/tenant name.\n    description: string — Human-readable context (e.g., “Dec Partial…” and quantity deltas, free-day notes).\n    type: string — One of:\n                                       • \"prorate\"      (partial-month change)\n                                       • \"subscription\" (full-month baseline)\n    vendorName: string — Upstream vendor (e.g., \"Microsoft\").\n    salesTax: number — Tax amount for the line (often 0 here).\n    productName: string — Marketing name of the SKU.\n    startPeriod: string — Period start date, ISO format.\n    companyId: string — Internal company/customer ID.\n    details: any|null — Reserved for extra metadata (null in sample).\n    id: string — Source row/record identifier.\n    costTotal: number — Extended cost (quantity × cost), can be negative when reversing/canceling.\n    sku: string — Vendor SKU code.\n    detailsShortened: any|null  — Optional shortened details (null in sample).\n    currencyId: number — ISO currency code. Reference CURRENCY ISO CODES. \n\nROLLUP STRUCTURES\n  NewTotalsRollup / CanceledTotalsRollup (object in a one-element array):\n    sum_costTotal: number — Sum of costTotal for the bucket.\n    sum_salesTax: number — Sum of salesTax for the bucket.\n    unique_count_companyName: number — Count of distinct companyName values.\n    count_id: number — Number of line items (row count).\n    unique_count_productName: number — Count of distinct productName values.\n\n  ChangedTotalsRollup (object in a one-element array):\n    unique_count_same_companyName : number — Distinct companies appearing in bothChanged\n    unique_count_same_productName : number — Distinct product names in bothChanged.\n\nUNIQUE LISTS\n  new_unique_companyName / canceled_unique_companyName (arrays):\n    Each element is an object with:\n      companyName : string — Unique company present in that bucket.\n\nDIFF STRUCTURE (\"bothChanged\" ARRAY)\n  ChangedComparison (object):\n    keys: object — Natural keys for matching rows across periods:\n                  {\n                    companyId: string,\n                    productId: string,\n                    type: \"prorate\" | \"subscription\",\n                    detailsShortened : any|null\n                  }  (These fields define identity for the comparison.)\n\n    same: object — Fields that are identical in both inputs. Typical fields:\n                  quantity?, cost?, productId, companyName, type, vendorName,\n                  salesTax, productName, companyId, details, sku, detailsShortened.\n                  (Only the fields that genuinely match are listed.)\n\n    different: object — Fields that changed, shown as:\n                  {\n                    <fieldName>: { inputA: valueInNewerPeriod, inputB: valueInOlderPeriod },\n                    ...\n                  }\n                  Common changed fields: quantity, cost, costTotal.\n\n    skipped: object — Fields intentionally excluded from equality checks but still shown for traceability (e.g., date ranges, record ids, free-text descriptions). Shape mirrors “different”:\n                  {\n                    <fieldName>: { inputA: valueInNewerPeriod, inputB: valueInOlderPeriod },\n                    ...\n                  }\n                  Typical skipped fields: startPeriod, endPeriod, id, description.\n\nFIELD NOTES & TYPING DETAILS\n  - quantity: integer for counts; may be negative for reductions/credits in prorates.\n  - cost: decimal (unit price), often with 2–4 decimals due to prorate math.\n  - costTotal: decimal; equals quantity × cost for most lines (sign follows quantity).\n  - type: \"prorate\" indicates partial-period charges due to mid-period changes.\n          \"subscription\" indicates the full-period baseline charge.\n  - description: human-readable note (month name, action, quantity delta, and notes like “including 1 free day”). Useful for audit, not for keys.\n  - startPeriod/endPeriod: ISO dates delimiting the charge window being priced.\n  - keys in bothChanged: act as the composite identifier across periods so the agent knows which two lines are being compared.\n\nINTENDED USE BY AN AI AGENT\n  - Iterate each bucket independently:\n      • \"new\" → generate adds/charges to apply.\n      • \"canceled\" → generate credits/removals.\n      • \"bothChanged\" → update existing subscriptions using “different” deltas.\n    Rollups help with reconciliation (sanity checks) and reporting.\n\nVALIDATION TIPS\n  - costTotal ≈ quantity × cost (watch rounding on prorates).\n  - Negative quantities/costTotals indicate decreases or credits.\n  - Use “keys” to correlate historical vs. current entries; do NOT rely on \"id\".\n  - Treat “skipped” fields as metadata for audit, not for equality.\n\nNotes:\n- When providing differences, ALWAYS tell the user 1) all the companies on the invoice with differences, 2) a summary across all companies, and 3) both the quantity and total (costTotal).\n- If the user asks about more than one product, company, or vendor, run the tool separately for each value. \n\nForbidden:\n- NEVER include more than one filterValues per filter. DO NOT csv multiple filterValues.\n\nExamples:\n- User: What changed from March to April for Ashville?\n  System: filter=companyName, filterValues=Ashville\n- User: What changed from March to April for Microsoft?\n  System: filter=vendorName, filterValues=Microsoft\n- User: Compare the business premium and business standard spend on the October and November invoices.\n  System WILL NOT: filter=productName, filterValues=business premium,business standard.\n  System WILL run Invoice Diff - Details 2 separate times: 1) filter=productName, filterValues=business premium 2) filter=productName, filterValues=business standard.\n- If it is unclear when the user says \"for ABC\" as part of their prompt if \"ABC\" is a company or vendor, you may ask.\n\n---\n\nINVOICE CALCULATION AGENT\nPURPOSE: A specialized sub-agent that analyzes invoice rows and returns ONLY the specific data needed to answer the user's question. This dramatically reduces response time and token usage, especially for multi-month queries.\nWHEN TO USE: When the user is asking for calculations, breakdowns, counts, or analysis on invoice data. Look for keywords like \"calculate\", \"breakdown\", \"analyze\", \"how much\", \"how many\", \"total\", \"count\", etc.\n\nINPUTS:\n- invoiceDate: Month of the invoice. Format: YYYY-MM-01.\n- searchField: The API field to filter by (e.g., vendorName, companyName, description).\n- searchParam: The value to search within the searchField.\n- userPrompt: The original user question (passed automatically).\n- sessionId: Session identifier (passed automatically).\n\nOUTPUT:\nThe agent returns a natural language answer to the user's specific question. It intelligently calls only the necessary internal tools:\n- Get Invoice Totals: For overall sums, counts, and unique counts\n- Get Totals by Company: For per-company breakdowns\n- Get Totals by Vendor: For per-vendor breakdowns  \n- Get Totals by Company by Product: For granular company+product analysis\n- Get Unique Products: For listing products (no totals)\n- Get Invoice Records: For raw line item details (use sparingly)\n\nBENEFITS:\n- Faster responses for multi-month queries (e.g., \"all of 2024\")\n- Reduced token usage - only fetches what's needed\n- Cleaner, more focused answers\n\nNOTES:\n- This tool may be called multiple times for multi-month queries.\n- The sub-agent handles summarization, so responses are ready to present to the user.\n- If nothing is found, the agent will explain what search parameters were used.\n\nEXAMPLES:\n1. User asks, \"How much did they spend on Microsoft in 2024?\"\n- Call for each month: invoiceDate=\"2024-01-01\" through \"2024-12-01\", searchField=\"vendorName\", searchParam=\"Microsoft\"\n- Agent returns summarized total across all months.\n\n2. User asks, \"Break down Microsoft spend by company for October.\"\n- Inputs: invoiceDate=\"2024-10-01\", searchField=\"vendorName\", searchParam=\"Microsoft\"\n- Agent calls Get Totals by Company and returns the breakdown.\n\n3. User asks, \"What Microsoft products are on the November invoice?\"\n- Inputs: invoiceDate=\"2024-11-01\", searchField=\"vendorName\", searchParam=\"Microsoft\"\n- Agent calls Get Unique Products and lists product names.\n\n\n---\n\n\nAVAILABLE API FIELDS\nUse these fields for INPUTS filters and field selection:\n\nFILTER and FIELD parameters:\n- vendorName: Vendor name (e.g., Microsoft, SentinelOne)\n- companyId: Customer/company identifier (NOT THE PARTNER ID)\n- type: Charge category (e.g., subscription, one-time, prorate)\n- commitmentTerm: Commitment horizon (e.g., Monthly, 1-Year)\n- productId: Product identifier\n\nFIELD only parameters:\n- id: Unique ID for the invoice row\n- recordId: Source system record identifier\n- companyName: Partner's customer/company name\n- offeredBy: Distributor/marketplace (e.g., Pax8)\n- productName: Product display name\n- sku: SKU code\n- description: Line description (may include proration/change details)\n- details: Optional additional info (nullable)\n- chargeType: Billing basis (e.g., \"per\")\n- rateType: Pricing method (e.g., Flat, Volume, Single)\n- unitOfMeasure: Units sold (e.g., User, GB, Endpoint)\n- term: Billing term (e.g., Monthly, One-Time)\n- startPeriod: Start of billed period (YYYY-MM-DD)\n- endPeriod: End of billed period (YYYY-MM-DD)\n- billingRenewal: Next renewal date (nullable)\n- invoiceDate: Invoice date (YYYY-MM-01)\n- purchaseOrderNumber: PO reference (nullable or \"N/A\")\n- arrearsSubscriptionId: Identifier for arrears-type charges (nullable)\n- currencyId: Currency code ID (e.g., \"1\" for USD)\n- quantity: Units sold (string decimal; may be fractional)\n- price: Unit sell price (string decimal)\n- total: Extended sell total (quantity × price)\n- cost: Partner cost (string decimal)\n- costTotal: Partner extended cost (quantity × cost). \n- salesTax: Sales tax (string decimal)\n- billingFee: Distributor/processing fee (string decimal)\n- billingFeeRate: Fee rate (string decimal)\n- billedByPax8: \"true\"/\"false\" as string indicating distributor billing\n\nNOTE: costTotal is calculated as quantity × cost. Refer to this as Total never costTotal.\n\n\n---\n\n\nCURRENCY ISO CODES:\nMap the following currency IDs to their corresponding ISO codes, names, and symbols:\n- 1 = USD (US Dollar, $)\n- 2 = CAD (Canadian Dollar, C$)\n- 3 = GBP (British Pound, £)\n- 4 = EUR (Euro, €)\n- 5 = CHF (Swiss Franc, CHF)\n- 6 = NOK (Norwegian Krone, Kr)\n- 7 = SEK (Swedish Krona, kr)\n- 8 = DKK (Danish Krone, DKK)\n- 9 = AUD (Australian Dollar, A$)\n- 10 = NZD (New Zealand Dollar, NZ$)\n- 11 = THB (Thai Baht, ฿)\n- 12 = IDR (Indonesian Rupiah, RP)\n- 13 = MYR (Malaysian Ringgit, RM)\n- 14 = SGD (Singapore Dollar, S$)\n- 15 = VND (Vietnamese Dong, ₫)\n- 44 = PHP (Philippine Peso, ₱)\n\n\n---\n\n\n=== IMPORTANT NOTES ===\n- Always tell the user which month and year the data surfaced is from.\n- Use kind, fun, yet professional language when determining your response.\n- Use interesting, markdown formatting including headers, bold, italics, bulleted lists, numbered lists, emojis, etc. to make the interactions easily readable and fun.\n- If unable to obtain the information the user requires, tell the user you cannot perform the task and offer suggestions as to what you can do.\n- VERY IMPORTANT: On a partner's invoice exist companies (the partner's customer). Included on the invoice is a \"company\" for the partner as well. When the user asks for something and mentions the partner name, ask the user if they mean the total invoice or the partner's \"company\" on the invoice.\n- Always pay attention to the currency. Use the proper currency symbol.\n- You only know what is reflected on the invoice.\n- Do not make assumptions about anything that happened prior to the invoice generation or the calculations that led to the invoice.\n- Do not make assumptions about billing, pricing, platform, or systems issues that led to the invoice generation.\n- Always inform the user if what they are asking would require knowledge you don't have.\n- If the user asks for information about a particular year, provide information about all 12 months in that year. \n\n\n=== FORBIDDEN ===\n- NEVER infer, predict, assume, or determine numerical calculations. If using the Calculate Invoice Rows, ALWAYS ALWAYS simply message the user using the data provided. \n- DO NOT use syntax highlighting, horizontal lines, tables, and task list in your output.\n- DO NOT offer to output or export data in any format (Ex. CSV, PDF, Excel). Only information comes through chatting.\n- DO NOT ever use field names. Instead, use more human readable version. The user may not know what each field is. Ex. salesTax = sales tax; productName = product name.\n\n---\n\n=== SCOPE ===\nNever offer to do anything for the user that is out of scope. In scope functionality is determined by what the tools can do. You are able to pull and analyze what is on invoices. If the user asks for something that is not explicitly in scope, 1) tell the user their request is outside of your abilities at the moment, 2) tell the user what is in scope (what your tools can do), and 3) give the user both links to the Pax8 Marketplace Partner pages.\n\nLINK FORMAT:\nThe Pax8 Marketplace currently exists in 2 formats: New Experience and Old Experience. The links are formatted differently.\n\nNew Experience: https://app.pax8.com/account/settings/{{ $json.guid }}\nOld Experience: https://app.pax8.com/partners/{{ $json.id }}\n\nOUT OF SCOPE:\n- ledger\n- manual adjustments, credits, charges\n- bill on behalf customers\n- invoice accuracy\n- missing items or subscriptions on the invoice\n\n---\n",
+          "enableStreaming": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        48,
+        96
+      ],
+      "id": "19e4b1c5-0f87-4820-92ab-397f305ed38b",
+      "name": "Invoice Agent",
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "collection": "=billingbot_confirm_partner",
+        "options": {},
+        "query": "={\n  \"sessionId\": \"{{ $json.sessionId }}\"\n} "
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        -672,
+        352
+      ],
+      "id": "c131d2bf-af41-4571-8049-8538059574e2",
+      "name": "Partner Confirmed?",
+      "alwaysOutputData": true,
+      "credentials": {
+        "mongoDb": {
+          "id": "Ggo0MKdauxTlpDyQ",
+          "name": "aitobillbot-mongodb"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1c174919-2464-41a4-bf92-82a0887ed4d0",
+              "name": "userPrompt",
+              "value": "={{ $('Input').item.json.userPrompt }}",
+              "type": "string"
+            },
+            {
+              "id": "fbed7988-e9f3-4d43-8df2-bfbd4efd59df",
+              "name": "sessionId",
+              "value": "={{ $('Input').item.json.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "7805a628-8ec1-40bd-8d40-fd98c2c53174",
+              "name": "context",
+              "value": "={{ $json.context }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -896,
+        352
+      ],
+      "id": "021882cc-ce44-4113-a4b6-20148d9ff185",
+      "name": "Variables"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "userPrompt"
+            },
+            {
+              "name": "sessionId"
+            },
+            {
+              "name": "context"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1120,
+        352
+      ],
+      "id": "fdd91f9f-2329-4302-ba0c-e1fdbfaa00d9",
+      "name": "Input"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "edd1eea2-7971-42c8-84d4-4326be4751fe",
+              "name": "output",
+              "value": "Use the Partner_Agent tool.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -128,
+        864
+      ],
+      "id": "581aa5bc-9d09-47ec-aa66-0cc2e369a6b9",
+      "name": "Output"
+    },
+    {
+      "parameters": {
+        "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nCalled to pull invoice line items.\n\nWorkflow with agent to determine data filtering parameters. Includes API call to pull invoice by partnerId and invoiceDate.",
+        "height": 384,
+        "width": 208,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        576,
+        272
+      ],
+      "typeVersion": 1,
+      "id": "c236b9da-5672-4004-9310-2a3a6407d3bf",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\nCompare 2 months of invoices rows by company per vendor.",
+        "height": 384,
+        "width": 208,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        992,
+        272
+      ],
+      "typeVersion": 1,
+      "id": "12ae0cd7-f53e-4394-bf9c-d4216378aa10",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\nCalled to search for invoice and pull invoice information.\n\nWorkflow with API call and filter to only non-Void invoices.",
+        "height": 384,
+        "width": 208,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        368,
+        272
+      ],
+      "typeVersion": 1,
+      "id": "f4a75875-ab22-40a3-844e-b9517fffb389",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\n**AI Engine:** GPT-5\n**Memory**: MongoDB Chat Memory\n  **Collection:** billingbot_chats_invoice",
+        "height": 384,
+        "width": 560,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -192,
+        272
+      ],
+      "typeVersion": 1,
+      "id": "9b3c74c9-e15b-47b1-83b5-159d32f88b80",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "content": "## Invoice Agent\nChoses whether the need is to search invoices, surface invoice information, and/or pull invoice line items. \n\n**Output:** Response to Router Agent.",
+        "height": 304,
+        "width": 400,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        -64
+      ],
+      "typeVersion": 1,
+      "id": "4bb79cde-ddb5-402f-8b1b-174d8d771614",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "### Called by Billing Bot\n**Inputs:** userPrompt, sessionId",
+        "height": 272,
+        "width": 192,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1168,
+        240
+      ],
+      "typeVersion": 1,
+      "id": "223219e7-c284-464a-8620-ea558bf1093a",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "### Set workflow variables\nuserPromp, sessionId",
+        "height": 272,
+        "width": 192
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -944,
+        240
+      ],
+      "typeVersion": 1,
+      "id": "ebee2681-2114-491c-a1f0-4eb3f15e7bc8",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "content": "### Partner Confirmed?\nPartner the user would like to pull info must be explicitly confirmed.",
+        "height": 272,
+        "width": 208,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -720,
+        240
+      ],
+      "typeVersion": 1,
+      "id": "d510d7a3-e0ba-449c-98c4-a1a7862906b2",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "### If\n**True:** Output partner info.\n**False:** Search for and confirm partner.",
+        "height": 272,
+        "width": 208,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -512,
+        240
+      ],
+      "typeVersion": 1,
+      "id": "68b64257-721c-44fc-b7d6-359125fc87aa",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "content": "### Output If Partner Not Confirmed\nSimple message to the Router agent. ",
+        "height": 272,
+        "width": 192,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -176,
+        736
+      ],
+      "typeVersion": 1,
+      "id": "39cceb9d-97d9-4cbf-9a18-f42e5bd19292",
+      "name": "Sticky Note10"
+    },
+    {
+      "parameters": {
+        "description": "Fetch Invoices by Partner ID. Default offset is 0 and default max is 10. The maximum max is 100.",
+        "workflowId": {
+          "__rl": true,
+          "value": "pnfqaPMDG9PohkBi",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/pnfqaPMDG9PohkBi",
+          "cachedResultName": "aito-billingbot — List Invoices"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "partnerId": "={{ $('Partner Confirmed?').item.json.id }}",
+            "max": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('max', `number of invoices to return. Best to retrieve more than necessary due to some invoices being voided.`, 'string') }}",
+            "offset": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('offset', `number of invoices to skip (for pagination)`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "partnerId",
+              "displayName": "partnerId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "offset",
+              "displayName": "offset",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "max",
+              "displayName": "max",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        432,
+        320
+      ],
+      "id": "3b8a8a7c-f710-412e-b312-baea0d621085",
+      "name": "List Invoices"
+    },
+    {
+      "parameters": {
+        "includeTime": false,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dateTimeTool",
+      "typeVersion": 2,
+      "position": [
+        240,
+        320
+      ],
+      "id": "d4c10160-b5c0-4aac-a2a1-5c79c29f6ef9",
+      "name": "GetCurrentDate"
+    },
+    {
+      "parameters": {
+        "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nRetrieve summarized invoice data summed and grouped company and vendor. No filters.",
+        "height": 384,
+        "width": 208,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        784,
+        272
+      ],
+      "typeVersion": 1,
+      "id": "0fbbdc53-203a-477f-be4c-bccc058ededa",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "description": "PURPOSE: Retrieve summarized invoice data summed and grouped company and vendor. No filters.\nWHEN TO USE: When the user needs summarized costTotal data, not filtered.\n\nINPUTS:\n- invoiceDate (REQUIRED): Format YYYY-MM-01\n\nOUTPUTS:\n- records: Array of invoice rows summarized by company and vendor\n- sumOfCostTotal: Total cost across all returned records",
+        "workflowId": {
+          "__rl": true,
+          "value": "6Zbdh0HlTKlPPBXj",
+          "mode": "list",
+          "cachedResultName": "aito-billingbot — Get Invoice Rows - Summarized"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "partnerId": "={{ $('Partner Confirmed?').item.json.id }}",
+            "invoiceDate": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('invoiceDate', ``, 'string') }}",
+            "sessionId": "={{ $('Variables').item.json.sessionId }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "partnerId",
+              "displayName": "partnerId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "invoiceDate",
+              "displayName": "invoiceDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        848,
+        320
+      ],
+      "id": "52c2704c-19a0-4399-813c-b29fdbc381c4",
+      "name": "Get Invoice Rows - Summarized",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "description": "GET INVOICE ROWS - DETAILED TOOL\nUse this tool when getting line item details about an invoice.\n\nRequired inputs:\n- invoiceDate: Format YYYY-MM-01\n\nOptional inputs:\n- filters: API fields to filter by\n- filterValues: Values for the filters\n- fields: Comma-separated list of fields to return",
+        "workflowId": {
+          "__rl": true,
+          "value": "8JGjfxwZbtGX3llx",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/8JGjfxwZbtGX3llx",
+          "cachedResultName": "aito-billingbot — Get Invoice Rows - Detailed"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "partnerId": "={{ $('Partner Confirmed?').item.json.id }}",
+            "invoiceDate": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('invoiceDate', `Format: YYYY-MM-01`, 'string') }}",
+            "sessionId": "={{ $('Variables').item.json.sessionId }}",
+            "filters": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('filters', `Comma separated string. Choose what to filter invoice rows by. Options: vendorName, companyId, type, commitmentTerm, productId.`, 'string') }}",
+            "filterValues": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('filterValues', `Comma separated string. Choose the values for your chosen filters.`, 'string') }}",
+            "fields": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fields', `Comma separated string. Chose which additional invoice fields/columns the invoice API will output. Default: vendorName,type,costTotal,quantity,productId,description.`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "partnerId",
+              "displayName": "partnerId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "invoiceDate",
+              "displayName": "invoiceDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "fields",
+              "displayName": "fields",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "filters",
+              "displayName": "filters",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "filterValues",
+              "displayName": "filterValues",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        640,
+        320
+      ],
+      "id": "b2d4df7e-32da-4b85-abea-5b81a96ad8ff",
+      "name": "Get Invoice Rows - Detailed",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "description": "Call this tool to compare an overall summary of two invoices.",
+        "workflowId": {
+          "__rl": true,
+          "value": "PYSpk8cbAFxSnK8y",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/PYSpk8cbAFxSnK8y",
+          "cachedResultName": "aito-billingbot — Invoice Diff - Summary"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sessionId": "={{ $('Variables').item.json.sessionId }}",
+            "partnerId": "={{ $('Partner Confirmed?').item.json.id }}",
+            "invoiceDateA": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('invoiceDateA', `Must be in format YYYY-MM-01. Should be the newer of the two months to compare.`, 'string') }}",
+            "invoiceDateB": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('invoiceDateB', `Must be in format YYYY-MM-01. Should be the older of the two months to compare.`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "partnerId",
+              "displayName": "partnerId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "invoiceDateA",
+              "displayName": "invoiceDateA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "invoiceDateB",
+              "displayName": "invoiceDateB",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1056,
+        320
+      ],
+      "id": "a96b2f5a-ec6f-480c-a9c1-431348154cdd",
+      "name": "Invoice Diff - Summary"
+    },
+    {
+      "parameters": {
+        "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\nCompare 2 months of invoice in detail.",
+        "height": 384,
+        "width": 208,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1200,
+        272
+      ],
+      "typeVersion": 1,
+      "id": "57dd687b-972a-4733-9108-127468d8da47",
+      "name": "Sticky Note11"
+    },
+    {
+      "parameters": {
+        "description": "Call this tool to compare two invoices.",
+        "workflowId": {
+          "__rl": true,
+          "value": "U9IbOs4ecBUuOzSR",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/U9IbOs4ecBUuOzSR",
+          "cachedResultName": "aito-billingbot — Invoice Diff - Detailed"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sessionId": "={{ $('Variables').item.json.sessionId }}",
+            "partnerId": "={{ $('Partner Confirmed?').item.json.id }}",
+            "invoiceDateA": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('invoiceDateA', `Must be in format YYYY-MM-01. Should be the newer of the two months to compare.`, 'string') }}",
+            "invoiceDateB": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('invoiceDateB', `Must be in format YYYY-MM-01. Should be the older of the two months to compare.`, 'string') }}",
+            "fields": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fields', `Comma-separated list of fields to return`, 'string') }}",
+            "diffFields": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('diffFields', `Comma-separated list of fields to compare for changes`, 'string') }}",
+            "filters": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('filters', `Comma separated string. Choose what to filter invoice rows by. Options: vendorName, companyId, type, commitmentTerm, productId, companyName.`, 'string') }}",
+            "filterValues": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('filterValues', `Comma separated string. Choose the values for your chosen filters.`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "partnerId",
+              "displayName": "partnerId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "invoiceDateA",
+              "displayName": "invoiceDateA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "invoiceDateB",
+              "displayName": "invoiceDateB",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "fields",
+              "displayName": "fields",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "filters",
+              "displayName": "filters",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "filterValues",
+              "displayName": "filterValues",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "diffFields",
+              "displayName": "diffFields",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1264,
+        320
+      ],
+      "id": "9902a5ce-c811-412e-be70-55391d6f7146",
+      "name": "Invoice Diff - Detailed"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Variables').item.json.sessionId }}",
+        "collectionName": "billingbot_chats_invoice",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryMongoDbChat",
+      "typeVersion": 1,
+      "position": [
+        -16,
+        320
+      ],
+      "id": "62789525-e39a-4a3a-a3dc-b38ddaecd3b4",
+      "name": "Chat Memory",
+      "credentials": {
+        "mongoDb": {
+          "id": "Ggo0MKdauxTlpDyQ",
+          "name": "aitobillbot-mongodb"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\nPass the partnerId, an invoice date, a search field and search parameter to download, and filter the invoice by search parameter. The output is 1 item that includes: all filtered records, totals, total by company, total by company by product, and unique products.",
+        "height": 384,
+        "width": 208,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1408,
+        272
+      ],
+      "typeVersion": 1,
+      "id": "07a4f98c-91ba-468b-a564-559e75c93016",
+      "name": "Sticky Note12"
+    },
+    {
+      "parameters": {
+        "description": "Call this tool to search and lookup count or costTotals for products, products by company, products by company by product, and unique products.",
+        "workflowId": {
+          "__rl": true,
+          "value": "RKzFV8UrSDLkFiCB",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/RKzFV8UrSDLkFiCB",
+          "cachedResultName": "aito-billingbot — Calculate Invoice Rows"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "partnerId": "={{ $('Partner Confirmed?').item.json.id }}",
+            "invoiceDate": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('invoiceDate', `Format: YYYY-MM-01`, 'string') }}",
+            "searchField": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('searchField', `Can be any field returned by the API in which the user's request may be present. Ex. \"description\".`, 'string') }}",
+            "searchParam": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('searchParam', `The parameter to search within the searchField. Ex. \"azure\".`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "partnerId",
+              "displayName": "partnerId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "invoiceDate",
+              "displayName": "invoiceDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "searchField",
+              "displayName": "searchField",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "searchParam",
+              "displayName": "searchParam",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1472,
+        320
+      ],
+      "id": "8f52f1f3-554f-44ec-a631-917e2377c221",
+      "name": "Calculate Invoice Rows",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "model": "aitobillbot-gpt-4.1",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        320
+      ],
+      "id": "cb2c2cd7-d903-4eb8-b35b-92f8c0217711",
+      "name": "gpt-4.1",
+      "credentials": {
+        "azureOpenAiApi": {
+          "id": "8fU9EDB6jvsplAt1",
+          "name": "aitobillbot-gpt-4.1"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "aitobillbot-gpt-4.1-mini",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        544
+      ],
+      "id": "9cd6cb9c-9c15-4e2f-9520-bde289ffb420",
+      "name": "gpt-4.1-mini",
+      "credentials": {
+        "azureOpenAiApi": {
+          "id": "RtCN1ViTxrrHqljL",
+          "name": "aitobillbot-gpt-4.1-mini"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "Call this tool to perform calculations on invoice rows. This agent intelligently selects only the data needed to answer the user's question, reducing response time and token usage. It can provide totals, breakdowns by company, breakdowns by vendor, breakdowns by product, unique product lists, or raw records.",
+        "workflowId": {
+          "__rl": true,
+          "value": "InvoiceCalculationAgent001",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "partnerId": "={{ $('Partner Confirmed?').item.json.id }}",
+            "invoiceDate": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('invoiceDate', `Format: YYYY-MM-01`, 'string') }}",
+            "searchField": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('searchField', `Can be any field returned by the API in which the user's request may be present. Ex. \"description\".`, 'string') }}",
+            "searchParam": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('searchParam', `The parameter to search within the searchField. Ex. \"azure\".`, 'string') }}",
+            "userPrompt": "={{ $('Input').item.json.userPrompt }}",
+            "sessionId": "={{ $('Variables').item.json.sessionId }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "partnerId",
+              "displayName": "partnerId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "invoiceDate",
+              "displayName": "invoiceDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "searchField",
+              "displayName": "searchField",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "searchParam",
+              "displayName": "searchParam",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "userPrompt",
+              "displayName": "userPrompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1680,
+        320
+      ],
+      "id": "65ffa05d-3b62-49b7-977f-1561df3bd505",
+      "name": "Invoice Calculation Agent (deprecated)",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nInvoice Calculation Agent (DEPRECATED) - Use the 6 granular tools directly instead.",
+        "height": 384,
+        "width": 208,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1616,
+        272
+      ],
+      "typeVersion": 1,
+      "id": "1fd09242-546e-4d72-af83-b47d46c02d31",
+      "name": "Sticky Note13"
+    },
+    {
+      "parameters": {
+        "description": "Get overall totals for the invoice: sum of costTotal, salesTax, quantity, and unique counts of companies, products, vendors, SKUs. Use for questions like 'how much did they spend?' or 'how many licenses?'",
+        "workflowId": {
+          "__rl": true,
+          "value": "RYPxsmkWlHvC-qFE1EBzO",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "partnerId": "={{ $('Partner Confirmed?').item.json.id }}",
+            "invoiceDate": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('invoiceDate', `Format: YYYY-MM-01`, 'string') }}",
+            "searchField": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('searchField', `The API field to filter by (e.g., vendorName, companyName, productName, description).`, 'string') }}",
+            "searchParam": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('searchParam', `The value to search within the searchField.`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "partnerId",
+              "displayName": "partnerId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "invoiceDate",
+              "displayName": "invoiceDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "searchField",
+              "displayName": "searchField",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "searchParam",
+              "displayName": "searchParam",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1888,
+        320
+      ],
+      "id": "tool-get-invoice-totals",
+      "name": "Get Invoice Totals"
+    },
+    {
+      "parameters": {
+        "description": "Get totals broken down by company. Returns array of {companyName, sum_costTotal, sum_salesTax, sum_quantity}. Use for 'how much did each company spend?' or 'which companies had X?' questions.",
+        "workflowId": {
+          "__rl": true,
+          "value": "GI8f5xNZNB0WAIUAPbqVn",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "partnerId": "={{ $('Partner Confirmed?').item.json.id }}",
+            "invoiceDate": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('invoiceDate', `Format: YYYY-MM-01`, 'string') }}",
+            "searchField": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('searchField', `The API field to filter by (e.g., vendorName, companyName, productName, description).`, 'string') }}",
+            "searchParam": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('searchParam', `The value to search within the searchField.`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "partnerId",
+              "displayName": "partnerId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "invoiceDate",
+              "displayName": "invoiceDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "searchField",
+              "displayName": "searchField",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "searchParam",
+              "displayName": "searchParam",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        2096,
+        320
+      ],
+      "id": "tool-get-totals-by-company",
+      "name": "Get Totals by Company"
+    },
+    {
+      "parameters": {
+        "description": "Get totals broken down by vendor. Returns array of {vendorName, sum_costTotal, sum_salesTax, sum_quantity}. Use for 'what vendors did they buy from?' or 'how much per vendor?' questions.",
+        "workflowId": {
+          "__rl": true,
+          "value": "PD7WUJYfC-Y8dgDhuTSVG",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "partnerId": "={{ $('Partner Confirmed?').item.json.id }}",
+            "invoiceDate": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('invoiceDate', `Format: YYYY-MM-01`, 'string') }}",
+            "searchField": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('searchField', `The API field to filter by (e.g., vendorName, companyName, productName, description).`, 'string') }}",
+            "searchParam": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('searchParam', `The value to search within the searchField.`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "partnerId",
+              "displayName": "partnerId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "invoiceDate",
+              "displayName": "invoiceDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "searchField",
+              "displayName": "searchField",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "searchParam",
+              "displayName": "searchParam",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        2304,
+        320
+      ],
+      "id": "tool-get-totals-by-vendor",
+      "name": "Get Totals by Vendor"
+    },
+    {
+      "parameters": {
+        "description": "Get totals broken down by company AND product. Returns array of {companyName, productName, sku, sum_costTotal, sum_salesTax, sum_quantity}. Use for granular company+product analysis like 'what products did each company have?'",
+        "workflowId": {
+          "__rl": true,
+          "value": "_qfyL2fpSmTklNe8-lK-U",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "partnerId": "={{ $('Partner Confirmed?').item.json.id }}",
+            "invoiceDate": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('invoiceDate', `Format: YYYY-MM-01`, 'string') }}",
+            "searchField": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('searchField', `The API field to filter by (e.g., vendorName, companyName, productName, description).`, 'string') }}",
+            "searchParam": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('searchParam', `The value to search within the searchField.`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "partnerId",
+              "displayName": "partnerId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "invoiceDate",
+              "displayName": "invoiceDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "searchField",
+              "displayName": "searchField",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "searchParam",
+              "displayName": "searchParam",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1888,
+        528
+      ],
+      "id": "tool-get-totals-by-company-by-product",
+      "name": "Get Totals by Company by Product"
+    },
+    {
+      "parameters": {
+        "description": "Get list of unique products on the invoice. Returns array of {productName, sku}. Use for 'what products are on the invoice?' questions - returns product names and SKUs only, no quantities or totals.",
+        "workflowId": {
+          "__rl": true,
+          "value": "O9PSOSOR5zedQIDB_RRLY",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "partnerId": "={{ $('Partner Confirmed?').item.json.id }}",
+            "invoiceDate": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('invoiceDate', `Format: YYYY-MM-01`, 'string') }}",
+            "searchField": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('searchField', `The API field to filter by (e.g., vendorName, companyName, productName, description).`, 'string') }}",
+            "searchParam": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('searchParam', `The value to search within the searchField.`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "partnerId",
+              "displayName": "partnerId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "invoiceDate",
+              "displayName": "invoiceDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "searchField",
+              "displayName": "searchField",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "searchParam",
+              "displayName": "searchParam",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        2096,
+        528
+      ],
+      "id": "tool-get-unique-products",
+      "name": "Get Unique Products"
+    },
+    {
+      "parameters": {
+        "description": "Get raw invoice line item records. Returns array of full invoice records. WARNING: This returns the most data - only use when user explicitly needs to see raw line items or detailed record-level information.",
+        "workflowId": {
+          "__rl": true,
+          "value": "0Pc9lrdFgXuGs3eqbQRKm",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "partnerId": "={{ $('Partner Confirmed?').item.json.id }}",
+            "invoiceDate": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('invoiceDate', `Format: YYYY-MM-01`, 'string') }}",
+            "searchField": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('searchField', `The API field to filter by (e.g., vendorName, companyName, productName, description).`, 'string') }}",
+            "searchParam": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('searchParam', `The value to search within the searchField.`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "partnerId",
+              "displayName": "partnerId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "invoiceDate",
+              "displayName": "invoiceDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "searchField",
+              "displayName": "searchField",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "searchParam",
+              "displayName": "searchParam",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        2304,
+        528
+      ],
+      "id": "tool-get-invoice-records",
+      "name": "Get Invoice Records"
+    }
+  ],
+  "pinData": {
+    "Input": [
+      {
+        "json": {
+          "userPrompt": "look through all of their bills from 2024 to see when they got billed for crewhu!",
+          "sessionId": "1767814183.335179",
+          "context": null
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Invoice Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "Invoice Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invoice Agent": {
+      "main": [
+        []
+      ]
+    },
+    "Partner Confirmed?": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input": {
+      "main": [
+        [
+          {
+            "node": "Variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Variables": {
+      "main": [
+        [
+          {
+            "node": "Partner Confirmed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Invoices": {
+      "ai_tool": [
+        [
+          {
+            "node": "Invoice Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetCurrentDate": {
+      "ai_tool": [
+        [
+          {
+            "node": "Invoice Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Invoice Rows - Summarized": {
+      "ai_tool": [
+        [
+          {
+            "node": "Invoice Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Invoice Rows - Detailed": {
+      "ai_tool": [
+        [
+          {
+            "node": "Invoice Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invoice Diff - Summary": {
+      "ai_tool": [
+        [
+          {
+            "node": "Invoice Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invoice Diff - Detailed": {
+      "ai_tool": [
+        [
+          {
+            "node": "Invoice Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Invoice Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Invoice Rows": {
+      "ai_tool": [
+        [
+          {
+            "node": "Invoice Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gpt-4.1": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "gpt-4.1-mini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Invoice Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Invoice Agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "Invoice Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Invoice Totals": {
+      "ai_tool": [
+        [
+          {
+            "node": "Invoice Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Totals by Company": {
+      "ai_tool": [
+        [
+          {
+            "node": "Invoice Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Totals by Vendor": {
+      "ai_tool": [
+        [
+          {
+            "node": "Invoice Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Totals by Company by Product": {
+      "ai_tool": [
+        [
+          {
+            "node": "Invoice Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Unique Products": {
+      "ai_tool": [
+        [
+          {
+            "node": "Invoice Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Invoice Records": {
+      "ai_tool": [
+        [
+          {
+            "node": "Invoice Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "bf765227-1576-4ea5-8cd6-00402ee9de7f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ff8bc74e685205366b7c1dbd5470d650b694ebd82b586124e988b6855aef7cb2"
+  },
+  "id": "YbM4pqxRD0AnOVhb",
+  "tags": []
+}
