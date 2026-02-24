@@ -1,0 +1,6 @@
+# Per-project config (created by n8n-sdlc-getting-started skill, instance-specific)
+config/project.json
+config/id-mappings.json
+
+# Secrets
+config/secrets.json

@@ -1,21 +1,5 @@
-# Per-project config (created by getting-started skill, instance-specific)
-config/project.json
-config/id-mappings.json
-
-# Workflow JSON files (pulled from n8n, instance-specific)
-agents/*.json
-tools/*.json
-!agents/.gitkeep
-!tools/.gitkeep
-
-# Example workflows (instance-specific, for reference only)
-example-workflows/
-
 # Workflow backups (generated during promotions)
 **/*.backup.*.json
-
-# Secrets
-config/secrets.json
 
 # OS files
 Thumbs.db
@@ -27,6 +11,9 @@ Desktop.ini
 *.swp
 *.swo
 *~
+
+# SDLC version marker (written by install.sh, instance-specific)
+.sdlc-version
 
 # Node (if any tooling is added later)
 node_modules/

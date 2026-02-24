@@ -1,0 +1,195 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "n8n SDLC ID Mappings",
+  "description": "Maps workflow names to their n8n IDs for dev/prod separation. Updated by n8n-sdlc-import-project, n8n-sdlc-reserve-workflows, n8n-sdlc-push-workflow, and n8n-sdlc-promote-workflow skills.",
+  "type": "object",
+  "required": ["workflows", "metadata"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "$comment": {
+      "type": "string"
+    },
+    "workflows": {
+      "type": "object",
+      "description": "Map of workflow names to their dev/prod n8n IDs. Keys are the PROD workflow name (the real name as it appears in n8n, e.g., 'Support Agent', 'List Invoices').",
+      "additionalProperties": {
+        "$ref": "#/definitions/workflowMapping"
+      }
+    },
+    "externalDependencies": {
+      "type": "object",
+      "description": "Workflows referenced by in-project workflows but belonging to a different n8n project. Never pulled or modified. Same ID used in both DEV and PROD (no transformation during promotion).",
+      "additionalProperties": {
+        "$ref": "#/definitions/externalDependency"
+      }
+    },
+    "reservedSlots": {
+      "type": "array",
+      "description": "Unclaimed workflow slots. Workflows created by user in n8n but not yet assigned to a dev/prod role.",
+      "items": {
+        "$ref": "#/definitions/reservedSlot"
+      }
+    },
+    "credentials": {
+      "type": "object",
+      "description": "Credential ID mappings between environments. Same structure as project.json credentials but tracked here for audit.",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "dev": { "type": "string" },
+          "prod": { "type": "string" }
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["projectName", "createdAt", "lastModified"],
+      "properties": {
+        "projectName": {
+          "type": "string",
+          "description": "Must match n8n-sdlc/config/project.json projectName"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastModified": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "statusValues": {
+      "type": "object",
+      "description": "Reference documentation for valid status values. Not used programmatically.",
+      "additionalProperties": { "type": "string" }
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "workflowMapping": {
+      "type": "object",
+      "required": ["type", "localPath", "dev", "prod"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["agent", "tool"],
+          "description": "Workflow type: 'agent' for AI-powered workflows (contain @n8n/n8n-nodes-langchain.* nodes), 'tool' for plain automation workflows"
+        },
+        "localPath": {
+          "type": "string",
+          "description": "Relative folder path where this workflow's JSON files are stored (e.g., 'agents/', 'tools/', 'agents/agents/'). File name is derived from the workflow name. Self-healed if files are moved."
+        },
+        "dev": {
+          "$ref": "#/definitions/environmentSlot",
+          "description": "Development environment workflow slot"
+        },
+        "prod": {
+          "$ref": "#/definitions/environmentSlot",
+          "description": "Production environment workflow slot"
+        },
+        "audit": {
+          "$ref": "#/definitions/auditTrail"
+        }
+      },
+      "additionalProperties": false
+    },
+    "environmentSlot": {
+      "type": "object",
+      "required": ["id", "status"],
+      "properties": {
+        "id": {
+          "type": ["string", "null"],
+          "description": "n8n workflow ID. Null means slot needs to be reserved."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "reserved", "needs-slot", "not-started"],
+          "description": "Current state of this environment slot"
+        }
+      },
+      "additionalProperties": false
+    },
+    "auditTrail": {
+      "type": "object",
+      "properties": {
+        "lastPromoted": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When this workflow was last promoted to prod"
+        },
+        "promotionCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total number of promotions"
+        },
+        "lastLocalPull": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When this workflow was last pulled from n8n"
+        },
+        "lastPush": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When this workflow was last pushed to n8n"
+        },
+        "lastPushEnvironment": {
+          "type": "string",
+          "enum": ["dev", "prod"],
+          "description": "Which environment the last push targeted"
+        },
+        "lastPromotionBackup": {
+          "type": "string",
+          "description": "File path of the last pre-promotion backup"
+        },
+        "lastVersionId": {
+          "type": "string",
+          "description": "versionId from n8n at last pull/push (for drift detection)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "externalDependency": {
+      "type": "object",
+      "required": ["id", "referencedBy"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "n8n workflow ID of the external workflow"
+        },
+        "referencedBy": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of in-project workflow names that reference this external workflow"
+        },
+        "note": {
+          "type": "string",
+          "description": "Optional note about this dependency (e.g., owner, purpose)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "reservedSlot": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "n8n workflow ID of the unclaimed slot"
+        },
+        "claimedBy": {
+          "type": ["string", "null"],
+          "description": "Workflow name this slot was assigned to, or null if unclaimed"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

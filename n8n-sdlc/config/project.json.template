@@ -1,0 +1,35 @@
+{
+  "$schema": "./project.schema.json",
+  "$comment": "This is a TEMPLATE file. Copy to project.json and fill in your values, or say 'get started'.",
+  "projectName": "My Project",
+  "n8nProjectId": "",
+  "workflowsDir": "",
+  "discoveryMode": "",
+  "masterWorkflowId": "",
+  "naming": {
+    "devPrefix": "DEV-"
+  },
+  "folderStrategy": {
+    "mode": "flat",
+    "dedicatedTools": "flat"
+  },
+  "tags": {
+    "dev": ["environment:dev"],
+    "prod": ["environment:prod"]
+  },
+  "git": {
+    "enabled": true,
+    "devBranch": "dev",
+    "mainBranch": "main",
+    "autoPush": true
+  },
+  "credentials": {
+    "$comment": "Map credentials that differ between dev and prod. Format: alias -> {dev: id, prod: id}",
+    "$example_slack": {
+      "dev": "slack-sandbox-credential-id",
+      "prod": "slack-production-credential-id"
+    }
+  },
+  "createdAt": "2026-02-05T00:00:00.000Z",
+  "version": "2.0"
+}
