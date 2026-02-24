@@ -27,10 +27,10 @@ Use the SDLC repo as a GitHub Template to create a brand-new repo with everythin
 1. Go to the SDLC repository on GitHub
 2. Click **"Use this template"** > **"Create a new repository"**
 3. Name your repo, set visibility, and create
-4. Clone your new repo:
+4. Open a new folder in Cursor (**File > Open Folder**) where you want the project to live
+5. Clone your repo into the workspace root using the Cursor terminal:
    ```bash
-   git clone <your-new-repo-url> my-n8n-project
-   cd my-n8n-project
+   git clone <your-new-repo-url> .
    ```
 
 This gives you a clean workspace with all SDLC files already in place.
