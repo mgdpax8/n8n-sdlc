@@ -32,6 +32,7 @@ Use the SDLC repo as a GitHub Template to create a brand-new repo with everythin
    ```bash
    git clone <your-new-repo-url> .
    ```
+   > The trailing `.` is important — it clones into the current folder instead of creating a subdirectory.
 
 This gives you a clean workspace with all SDLC files already in place.
 
