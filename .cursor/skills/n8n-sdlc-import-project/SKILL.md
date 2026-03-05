@@ -19,6 +19,7 @@ Discovery engine that finds, graphs, and registers all workflows in an n8n proje
 ## Step 1: Load Configuration
 
 Read `n8n-sdlc/config/project.json` to get:
+
 - `n8nProjectId` (required -- locks all MCP operations to this project)
 - `discoveryMode` (`"master"` or `"full-project"`)
 - `masterWorkflowId` (only when `discoveryMode` is `"master"`)
@@ -49,12 +50,14 @@ If the user picks master and `masterWorkflowId` is not in config, ask for the wo
 Best when there is a clear entry-point workflow (an agent that calls sub-agents and tools).
 
 1. Fetch the master workflow via MCP:
+
    ```
    MCP Tool: n8n_get_workflow
    Parameters:
      - id: {masterWorkflowId from config}
      - mode: "full"
    ```
+
 2. Verify `shared[0].projectId` matches `n8nProjectId`. If not, reject.
 3. Add to the discovered set
 4. Scan all nodes for workflowId references (see Step 3)
@@ -65,15 +68,18 @@ Best when there is a clear entry-point workflow (an agent that calls sub-agents 
 Best when there are multiple independent workflows or no clear hierarchy.
 
 1. List all workflows in the project:
+
    ```
    MCP Tool: n8n_list_workflows
    Parameters:
      - projectId: {n8nProjectId}
      - limit: 100
    ```
+
    Handle pagination with `hasMore`/`nextCursor` if needed.
 
 2. For each workflow in the list, fetch full details:
+
    ```
    MCP Tool: n8n_get_workflow
    Parameters:
@@ -100,12 +106,14 @@ For each referenced workflow ID:
 
 1. **Already in discovered set?** Skip (already processed)
 2. **Fetch via MCP:**
+
    ```
    MCP Tool: n8n_get_workflow
    Parameters:
      - id: {referenced workflow ID}
      - mode: "full"
    ```
+
 3. **Check project ownership:** Compare `shared[0].projectId` to `n8nProjectId`
    - **Matches (in-project):** Add to discovered set, recurse into it
    - **Does not match (external):** Add to external dependencies list, do NOT recurse
@@ -126,10 +134,12 @@ For each discovered workflow:
 ```
 
 Classify each workflow:
+
 - **Agent**: Contains any `@n8n/n8n-nodes-langchain.agent`, `@n8n/n8n-nodes-langchain.chainLlm`, or similar AI nodes
 - **Tool**: No AI nodes (plain automation workflow)
 
 Determine hierarchy:
+
 - **Top-level**: Not called by any other in-project workflow (0 parents)
 - **Sub-agent**: Is an agent AND is called by another agent
 - **Shared tool**: Called by 2+ workflows
@@ -182,12 +192,14 @@ DEPENDENCY TREE:
 Read `folderStrategy` and `workflowsDir` from config. All paths are prefixed with `workflowsDir` if set.
 
 **Flat strategy:**
+
 | Classification | localPath |
 |---------------|-----------|
 | Any agent | `{workflowsDir}agents/` |
 | Any tool | `{workflowsDir}tools/` |
 
 **Categorized strategy:**
+
 | Classification | localPath |
 |---------------|-----------|
 | Top-level agent | `{workflowsDir}agents/` |
@@ -269,7 +281,7 @@ Examples:
 
 After registering all workflows as PROD, check `n8n-sdlc/config/project.json` for `slotCreator.webhookUrl`.
 
-### If Slot Creator is configured:
+### If Slot Creator is configured
 
 Offer to auto-create DEV slots immediately:
 
@@ -294,7 +306,7 @@ If the user says **yes**: invoke the reserve skill logic directly in handoff mod
 
 If the user says **no** or **later**: show the manual instructions below and let the user run "reserve workflows" when ready.
 
-### If Slot Creator is NOT configured:
+### If Slot Creator is NOT configured
 
 Show manual instructions:
 
@@ -319,7 +331,7 @@ TIP: Set up the Slot Creator helper workflow to automate this
 step. See n8n-sdlc/helpers/README.md for instructions.
 ```
 
-### In both cases, include the recommended seeding order:
+### In both cases, include the recommended seeding order
 
 ```
 RECOMMENDED SEEDING ORDER (bottom-up):
@@ -351,6 +363,7 @@ when seeding the agents that call them.
 ## Step 10: Git Sync
 
 After saving all workflow files, run the **n8n-sdlc-git-sync** skill with:
+
 - Files: all saved workflow JSONs, `n8n-sdlc/config/id-mappings.json`, `n8n-sdlc/config/project.json`
 - Message: `[import] Initial import: {N} workflows discovered`
 - Example: `[import] Initial import: 5 workflows discovered`

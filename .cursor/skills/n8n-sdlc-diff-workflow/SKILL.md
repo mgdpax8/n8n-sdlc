@@ -23,6 +23,7 @@ Compare local workflow JSON against the remote version in n8n to detect drift.
 ### Step 1: Identify the Workflow
 
 Accept workflow by:
+
 - **Local file path**: Resolve via id-mappings (see Step 2)
 - **Logical name + environment**: "Support Agent" (dev or prod)
 - **Full workflow name**: PROD = "Support Agent", DEV = "DEV-Support Agent"
@@ -37,6 +38,7 @@ Logical name = PROD name = id-mappings key.
 4. Full path: `{localPath}/{DEV-Support Agent}.json` (e.g., `agents/DEV-Support Agent.json`)
 
 **Self-healing**: If the file is not found at the expected path:
+
 - Check if the file exists elsewhere under the project (e.g., moved to a different folder)
 - If found, update `localPath` in id-mappings.json to the correct folder
 - If not found, prompt user to pull the workflow first
@@ -81,12 +83,14 @@ Compare the following fields between local and remote:
 ### Step 7: Detailed Node Comparison
 
 For each node, compare:
+
 - Node exists in both versions
 - Node parameters match
 - Node credentials match
 - Node position (informational only)
 
 Report:
+
 ```
 DIFF REPORT: DEV-Support Agent
 ═══════════════════════════════════════════
@@ -114,6 +118,7 @@ Recommendation:
 ### Step 8: Provide Recommendation
 
 Based on the diff:
+
 - **No changes**: "Local and remote are in sync."
 - **Local only**: "You have local changes ready to push."
 - **Remote only**: "Remote has changes. Pull before making local edits."

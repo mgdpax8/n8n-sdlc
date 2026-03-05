@@ -31,6 +31,7 @@ Push a local workflow to n8n (update existing workflow).
 ### Step 1: Identify the Workflow
 
 Accept workflow by:
+
 - **Local file path**: `agents/DEV-Support Agent.json`
 - **Logical name + environment**: "Support Agent" (dev or prod)
 - **Full workflow name**: "DEV-Support Agent" (dev) or "Support Agent" (prod)
@@ -84,6 +85,7 @@ Before pushing, check if the remote workflow has been modified since last pull:
 ```
 
 **If drift detected:**
+
 ```
 REMOTE DRIFT DETECTED
 
@@ -132,6 +134,7 @@ If `environment === "prod"`:
 First, check if the target PROD workflow is active by calling `n8n_get_workflow` (mode: "minimal") and reading the `active` field.
 
 **If PROD workflow is ACTIVE:**
+
 ```
 PRODUCTION UPDATE WARNING
 
@@ -151,6 +154,7 @@ Type "confirm" to proceed, or anything else to cancel.
 ```
 
 **If PROD workflow is INACTIVE:**
+
 ```
 PRODUCTION UPDATE WARNING
 
@@ -173,6 +177,7 @@ Type "confirm" to proceed, or anything else to cancel.
 **Wait for explicit "confirm" response.**
 
 If user does NOT type "confirm":
+
 ```
 Operation cancelled. No changes were made to production.
 ```
@@ -197,6 +202,7 @@ Before overwriting PROD:
 ```
 
 **Logical name extraction:**
+
 ```
 Full name: "DEV-Support Agent"
 devPrefix (from project.json): "DEV-"
@@ -272,6 +278,7 @@ Update `n8n-sdlc/config/id-mappings.json`:
 ### Step 12: Confirm Completion
 
 **For DEV:**
+
 ```
 Successfully pushed workflow to n8n!
 
@@ -283,6 +290,7 @@ The n8n workflow has been updated with your local changes.
 ```
 
 **For PROD:**
+
 ```
 Successfully pushed workflow to PRODUCTION!
 
@@ -298,6 +306,7 @@ Please verify the workflow is working correctly in n8n.
 ### Step 13: Git Sync
 
 Run the **n8n-sdlc-git-sync** skill with:
+
 - Files: the pushed workflow JSON and `n8n-sdlc/config/id-mappings.json`
 - Message: `[push] {workflow name}`
 - Example: `[push] DEV-Support Agent`

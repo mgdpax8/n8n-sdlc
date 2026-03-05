@@ -16,6 +16,7 @@ Reserve and claim workflow slots in n8n using the "Reserve and Claim" pattern.
 **The n8n MCP server and REST API create new workflows in the "Personal" folder, not in project folders.**
 
 To get workflows into the correct project folder, we either:
+
 - **Automated path**: Use the Slot Creator helper workflow (webhook) to bulk-create and transfer workflows to the project folder
 - **Manual path**: Have the user create empty workflows in the n8n UI, then pull and claim them
 
@@ -111,9 +112,9 @@ If `slotCreator.webhookUrl` is set and non-empty:
 }
 ```
 
-3. **Ask the user for their n8n API key** (needed for the slot creator to call the n8n REST API). Do not store this value anywhere.
+1. **Ask the user for their n8n API key** (needed for the slot creator to call the n8n REST API). Do not store this value anywhere.
 
-4. Call the webhook:
+2. Call the webhook:
 
 ```bash
 curl -s -X POST "{webhookUrl}" \
@@ -121,7 +122,7 @@ curl -s -X POST "{webhookUrl}" \
   -d '{payload}'
 ```
 
-5. Parse the response:
+1. Parse the response:
 
 ```json
 {
@@ -133,11 +134,11 @@ curl -s -X POST "{webhookUrl}" \
 }
 ```
 
-6. **Verify**: Check that `count` matches `requested`. If `errors` is non-empty, report them.
+1. **Verify**: Check that `count` matches `requested`. If `errors` is non-empty, report them.
 
-7. **On total failure** (webhook unreachable, HTTP error, success=false with 0 created): Fall back to Step 3B (manual).
+2. **On total failure** (webhook unreachable, HTTP error, success=false with 0 created): Fall back to Step 3B (manual).
 
-8. **On partial failure** (some created, some failed): Report what was created, ask user if they want to manually create the remaining slots (Step 3B for the remainder) or retry.
+3. **On partial failure** (some created, some failed): Report what was created, ask user if they want to manually create the remaining slots (Step 3B for the remainder) or retry.
 
 ### Step 3B: Manual Creation (No Slot Creator or fallback)
 
@@ -233,6 +234,7 @@ If the user says no, let them swap specific entries. Do not re-ask for each one 
 For each claimed workflow, update the entry in `id-mappings.json`:
 
 **Post-import (DEV slots only)** — update existing entries:
+
 ```json
 {
   "Support Agent": {
@@ -251,6 +253,7 @@ For each claimed workflow, update the entry in `id-mappings.json`:
 ```
 
 **Greenfield (DEV + PROD)** — create new entries:
+
 ```json
 {
   "Support Agent": {
@@ -269,6 +272,7 @@ For each claimed workflow, update the entry in `id-mappings.json`:
 ```
 
 For `localPath`:
+
 - Default `"agents/"` for AI workflows (type: agent)
 - Default `"tools/"` for others (type: tool)
 - If the project has `folderStrategy.mode: "categorized"`, use the appropriate nested path
@@ -285,6 +289,7 @@ Use MCP to update workflow names:
 **Skip renaming for automated path (3A)** — slots were already created with correct names.
 
 For manual path (3B), rename using:
+
 ```
 n8n_update_partial_workflow with updateName operation:
   - workflow abc123 → name: "DEV-Support Agent"
@@ -331,6 +336,7 @@ If post-import, include the recommended seeding order (bottom-up from leaf tools
 ## Validation Checks
 
 Before claiming:
+
 1. Verify each ID is unique (not already in id-mappings)
 2. Verify workflow exists in n8n (via MCP)
 3. Verify workflow is in the locked project (shared[0].projectId check)
@@ -345,6 +351,7 @@ Before claiming:
 ## Git Sync
 
 After claiming slots, run the **n8n-sdlc-git-sync** skill with:
+
 - Files: `n8n-sdlc/config/id-mappings.json`
 - Message: `[reserve] Claimed {N} DEV slots`
 - Example: `[reserve] Claimed 5 DEV slots`

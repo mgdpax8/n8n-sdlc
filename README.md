@@ -9,6 +9,7 @@ A portable, lightweight Software Development Lifecycle (SDLC) framework for mana
 ## Overview
 
 This system enables safe development of n8n workflows by providing:
+
 - **Dev/Prod separation** within a single n8n instance
 - **Automated ID transformation** during promotion
 - **Safety checks** to prevent accidental production changes
@@ -37,12 +38,15 @@ See [Team Onboarding](n8n-sdlc/docs/Team-Onboarding.md) for all options includin
 
 ## Quick Start
 
-After installing, open the project in Cursor and:
+After installing, open the project in **Cursor** or **Claude Code**:
 
 1. **Run the setup wizard:**
+
    ```
-   Say: "Get started"
+   Cursor:      Say "Get started"
+   Claude Code: Type /n8n-get-started
    ```
+
    The wizard walks you through four questions:
    - **How are you starting?** (master workflow, project ID, or greenfield)
    - **Where to store files?** (defaults or custom folder)
@@ -52,16 +56,19 @@ After installing, open the project in Cursor and:
    It creates config and automatically discovers your workflows.
 
 2. **Create DEV slots:**
+
    ```
    Say: "Reserve workflows"
    ```
 
 3. **Populate DEV from PROD:**
+
    ```
    Say: "Seed dev"
    ```
 
 4. **Develop in DEV, promote to PROD:**
+
    ```
    Say: "Promote [workflow name] to prod"
    ```
@@ -75,22 +82,22 @@ After installing, open the project in Cursor and:
 | [Pilot Guide](n8n-sdlc/docs/Pilot-Guide-BillingBot.md) | Walkthrough using a sample project |
 | [Team Onboarding](n8n-sdlc/docs/Team-Onboarding.md) | Setup guide for new team members |
 
-## Skills Reference
+## Commands Reference
 
-| Skill | Purpose |
-|-------|---------|
-| `n8n-sdlc-getting-started` | Setup wizard (single entry point) |
-| `n8n-sdlc-import-project` | Discover and register existing workflows |
-| `n8n-sdlc-reserve-workflows` | Reserve and claim workflow slots |
-| `n8n-sdlc-seed-dev` | Populate DEV from PROD with ID transformation |
-| `n8n-sdlc-pull-workflow` | Fetch workflow from n8n |
-| `n8n-sdlc-push-workflow` | Update workflow in n8n (with drift detection) |
-| `n8n-sdlc-promote-workflow` | Promote DEV to PROD with ID transformation |
-| `n8n-sdlc-validate-workflow` | Pre-flight validation checks |
-| `n8n-sdlc-rollback-workflow` | Rollback using n8n version history |
-| `n8n-sdlc-diff-workflow` | Compare local vs remote, detect drift |
-| `n8n-sdlc-git-sync` | Auto commit/push to project repo after operations |
-| `n8n-sdlc-project-status` | Dashboard of all workflow states |
+| Claude Code Command | Cursor Skill | Purpose |
+|--------------------|-------------|---------|
+| `/n8n-get-started` | `n8n-sdlc-getting-started` | Setup wizard (single entry point) |
+| `/n8n-import-project` | `n8n-sdlc-import-project` | Discover and register existing workflows |
+| `/n8n-reserve-workflows` | `n8n-sdlc-reserve-workflows` | Reserve and claim workflow slots |
+| `/n8n-seed-dev` | `n8n-sdlc-seed-dev` | Populate DEV from PROD with ID transformation |
+| `/n8n-pull-workflow` | `n8n-sdlc-pull-workflow` | Fetch workflow from n8n |
+| `/n8n-push-workflow` | `n8n-sdlc-push-workflow` | Update workflow in n8n (with drift detection) |
+| `/n8n-promote-workflow` | `n8n-sdlc-promote-workflow` | Promote DEV to PROD with ID transformation |
+| `/n8n-validate-workflow` | `n8n-sdlc-validate-workflow` | Pre-flight validation checks |
+| `/n8n-rollback-workflow` | `n8n-sdlc-rollback-workflow` | Rollback using n8n version history |
+| `/n8n-diff-workflow` | `n8n-sdlc-diff-workflow` | Compare local vs remote, detect drift |
+| `/n8n-git-sync` | `n8n-sdlc-git-sync` | Auto commit/push to project repo after operations |
+| `/n8n-project-status` | `n8n-sdlc-project-status` | Dashboard of all workflow states |
 
 ## Rules Reference
 
@@ -102,11 +109,15 @@ After installing, open the project in Cursor and:
 ## Directory Structure
 
 **Flat layout** (default):
+
 ```
 .
 ├── .cursor/
-│   ├── rules/              # SDLC rules and conventions
-│   └── skills/             # Automation skills
+│   ├── rules/              # SDLC rules and conventions (auto-loaded by Cursor)
+│   └── skills/             # Automation skills (single source of truth)
+├── .claude/
+│   └── commands/           # Claude Code slash commands (wrappers for skills)
+├── CLAUDE.md               # Claude Code entry point (rules + command index)
 ├── n8n-sdlc/
 │   ├── config/             # Project configuration
 │   │   ├── project.json    # Project settings
@@ -117,9 +128,12 @@ After installing, open the project in Cursor and:
 ```
 
 **Categorized layout** (optional, set during setup wizard):
+
 ```
 .
 ├── .cursor/
+├── .claude/
+├── CLAUDE.md
 ├── n8n-sdlc/
 │   ├── config/
 │   └── docs/
@@ -134,6 +148,7 @@ After installing, open the project in Cursor and:
 ### Reserve and Claim Pattern
 
 Due to n8n MCP limitations, workflows must be:
+
 1. Created manually in n8n (in the correct folder)
 2. Claimed via the SDLC system to get their IDs
 3. Updated via MCP (not created)
@@ -148,6 +163,7 @@ Due to n8n MCP limitations, workflows must be:
 ### External Dependencies
 
 When a workflow references another workflow that belongs to a **different** n8n project:
+
 - The system records it in `id-mappings.json` under `externalDependencies`
 - During promotion and seeding, external `workflowId` references are **left untouched** (same ID serves both DEV and PROD)
 - External workflows are never pulled, modified, or managed by this SDLC
@@ -155,12 +171,14 @@ When a workflow references another workflow that belongs to a **different** n8n 
 ### Folder Categorization
 
 During import, you can choose how workflows are organized locally:
+
 - **Flat**: All agents in `agents/`, all tools in `tools/`
 - **Categorized**: Top-level agents in `agents/`, sub-agents in `agents/agents/`, shared tools in `tools/`, with optional grouping of dedicated tools by parent
 
 ### Git Sync
 
 Every SDLC operation that changes local files automatically commits and pushes to the project's git repo:
+
 - Day-to-day work commits to the `dev` branch
 - Promoting to PROD offers a PR from `dev` to `main`
 - The `main` branch always mirrors what's running in production
@@ -186,9 +204,9 @@ When promoting DEV → PROD (or seeding PROD → DEV), the system transforms:
 
 ## Getting Help
 
-- Check the skill files in `.cursor/skills/` for detailed instructions
-- Review rules in `.cursor/rules/` for conventions
-- Examine examples in `example/` for reference
+- **Cursor**: Check skill files in `.cursor/skills/` and rules in `.cursor/rules/`
+- **Claude Code**: Use `/n8n-*` slash commands or review `CLAUDE.md` for the rules and command index
+- Both IDEs share the same skill logic in `.cursor/skills/`
 
 ## Status
 

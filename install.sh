@@ -10,6 +10,7 @@ VERSION="$(cat "$SCRIPT_DIR/n8n-sdlc/VERSION" 2>/dev/null || echo "unknown")"
 
 SDLC_RULES=("n8n-sdlc.md" "n8n-sdlc-workflow-structure.md")
 SDLC_SKILL_PREFIX="n8n-sdlc-"
+SDLC_COMMAND_PREFIX="n8n-"
 
 SKIP_CONFIGS=("config/project.json" "config/id-mappings.json" "config/secrets.json")
 
@@ -135,7 +136,7 @@ install_skills() {
 
     log_info "Skills (.cursor/skills/${SDLC_SKILL_PREFIX}*/)"
 
-    for skill_dir in "$src_skills"/${SDLC_SKILL_PREFIX}*/; do
+    for skill_dir in "${src_skills}/${SDLC_SKILL_PREFIX}"*/; do
         [[ -d "$skill_dir" ]] || continue
         local skill_name
         skill_name="$(basename "$skill_dir")"
@@ -154,6 +155,26 @@ install_rules() {
         if [[ -f "$src_rules/$rule_file" ]]; then
             copy_file "$src_rules/$rule_file" "$dest_rules/$rule_file" ".cursor/rules/$rule_file"
         fi
+    done
+}
+
+install_claude_commands() {
+    local target="$1"
+    local src_commands="$SCRIPT_DIR/.claude/commands"
+    local dest_commands="$target/.claude/commands"
+
+    log_info "Claude Code commands (.claude/commands/${SDLC_COMMAND_PREFIX}*)"
+
+    if [[ ! -d "$src_commands" ]]; then
+        log_warn "No .claude/commands/ directory in source; skipping"
+        return
+    fi
+
+    for cmd_file in "${src_commands}/${SDLC_COMMAND_PREFIX}"*.md; do
+        [[ -f "$cmd_file" ]] || continue
+        local cmd_name
+        cmd_name="$(basename "$cmd_file")"
+        copy_file "$cmd_file" "$dest_commands/$cmd_name" ".claude/commands/$cmd_name"
     done
 }
 
@@ -257,6 +278,7 @@ echo ""
 
 install_skills "$TARGET"
 install_rules "$TARGET"
+install_claude_commands "$TARGET"
 install_sdlc_folder "$TARGET"
 
 # Copy CLAUDE.md for Claude Code compatibility

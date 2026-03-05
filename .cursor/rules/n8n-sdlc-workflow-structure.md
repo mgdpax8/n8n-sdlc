@@ -197,6 +197,7 @@ Sometimes workflows are selected by name in the UI, using "list" mode:
 ```
 
 Common credential types:
+
 - `oAuth2Api` - OAuth2 credentials
 - `mongoDb` - MongoDB connection
 - `azureOpenAiApi` - Azure OpenAI
@@ -207,11 +208,13 @@ Common credential types:
 To find all workflow references that need transformation:
 
 1. **Search for `toolWorkflow` nodes**:
+
    ```
    "type": "@n8n/n8n-nodes-langchain.toolWorkflow"
    ```
 
 2. **Search for `executeWorkflow` nodes**:
+
    ```
    "type": "n8n-nodes-base.executeWorkflow"
    ```

@@ -36,6 +36,7 @@ Promote a DEV workflow to PROD with full ID transformation.
 ### Step 1: Identify the Workflow to Promote
 
 Accept workflow by:
+
 - **Logical name** (id-mappings key): "Support Agent"
 - **Full DEV name**: "DEV-Support Agent" (devPrefix + name from `n8n-sdlc/config/project.json` `naming.devPrefix`)
 - **Local file path**: resolved via `localPath` from id-mappings (see Step 2)
@@ -43,6 +44,7 @@ Accept workflow by:
 ### Step 2: Load Source Workflow
 
 **Resolve local file path:**
+
 ```
 1. Look up workflow in id-mappings.json by logical name (key = PROD/real name, e.g., "Support Agent")
 2. Get localPath from the workflow entry (e.g., "agents/", "tools/")
@@ -52,17 +54,20 @@ Accept workflow by:
 ```
 
 **If local file exists at resolved path:**
+
 ```
 Read from: {localPath}{devPrefix}{logicalName}.json
 ```
 
 **If file not found at localPath (self-healing):**
+
 ```
 Search workspace by filename (e.g., "DEV-Support Agent.json")
 If found elsewhere, use that path and optionally suggest updating localPath in id-mappings
 ```
 
 **If no local file found:**
+
 ```
 Pull from n8n using DEV ID from id-mappings.json
 ```
@@ -85,6 +90,7 @@ Check `n8n-sdlc/config/id-mappings.json`:
 ```
 
 **If prod.id is null:**
+
 ```
 ERROR: No PROD slot reserved for "Support Agent"
 
@@ -118,6 +124,7 @@ For each found workflow ID:
 ```
 
 **If any in-project reference lacks a PROD mapping:**
+
 ```
 ERROR: Cannot promote - missing PROD mappings
 
@@ -132,6 +139,7 @@ Run "n8n-sdlc-reserve-workflows" to create PROD slots for these workflows first.
 ```
 
 **If any reference is unmapped (not in workflows or externalDependencies):**
+
 ```
 ERROR: Unmapped workflow reference
 
@@ -310,11 +318,13 @@ Parameters:
 Report the results:
 
 **If valid with no errors:**
+
 ```
 Post-promotion validation passed (0 errors, {N} warnings)
 ```
 
 **If errors found:**
+
 ```
 Post-promotion validation found issues:
 
@@ -355,12 +365,14 @@ Update `n8n-sdlc/config/id-mappings.json`:
 After pushing, check whether the PROD workflow was active or inactive:
 
 **If PROD was already active (published):**
+
 ```
 The PROD workflow was ACTIVE. The update has been PUBLISHED IMMEDIATELY.
 Changes are now live. Please verify in n8n.
 ```
 
 **If PROD was inactive (first-time promotion or unpublished):**
+
 ```
 The PROD workflow is currently INACTIVE (not published).
 The content has been saved but is NOT live yet.
@@ -437,6 +449,7 @@ If promotion causes issues:
 ### Step 16: Git Sync and PR Offer
 
 Run the **n8n-sdlc-git-sync** skill with:
+
 - Files: backup file and `n8n-sdlc/config/id-mappings.json`
 - Message: `[promote] {workflow name} (v{promotionCount})`
 - Example: `[promote] Support Agent (v3)`

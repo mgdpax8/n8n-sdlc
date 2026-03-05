@@ -17,7 +17,7 @@ This document covers manual procedures for the **SDLC Framework repo**. For the 
 
 ### Repository
 
-- **Remote:** https://github.com/mgdpax8/sdlc-test
+- **Remote:** <https://github.com/mgdpax8/sdlc-test>
 - **Default branch:** `main`
 - **Visibility:** Private
 
@@ -36,6 +36,7 @@ git status
 ```
 
 Review what files have changed. Pay attention to:
+
 - Modified files you intended to change
 - Untracked files that may need to be added or ignored
 
@@ -54,6 +55,7 @@ git add .                # stage everything (use with caution)
 ```
 
 **Never commit these files** (already in `.gitignore`):
+
 - `n8n-sdlc/config/project.json` -- contains instance-specific IDs
 - `n8n-sdlc/config/id-mappings.json` -- contains credential mappings
 
@@ -64,6 +66,7 @@ git commit -m "Short description of the change"
 ```
 
 Commit message guidelines:
+
 - Start with a verb: `Add`, `Update`, `Fix`, `Remove`, `Refactor`
 - Keep the first line under 72 characters
 - Examples:
@@ -90,6 +93,7 @@ git add . && git commit -m "Your message" && git push
 ### Asking Cursor to Push
 
 You can ask the AI assistant:
+
 - *"Commit and push my changes"*
 - *"Push the latest changes to GitHub"*
 
@@ -104,6 +108,7 @@ The project repo is managed automatically by the SDLC skills. You rarely need to
 ### How It Works
 
 After every SDLC operation (push, pull, promote, seed, import, reserve), the **n8n-sdlc-git-sync** skill:
+
 1. Stages the changed files
 2. Commits with a structured message (e.g., `[push] DEV-Support Agent`)
 3. Pushes to the remote

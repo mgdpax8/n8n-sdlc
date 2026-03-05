@@ -11,7 +11,7 @@ This repository is the **SDLC framework** -- a portable toolkit of rules, skills
 Before starting, you need:
 
 1. **Cursor IDE or Claude Code** (either works — see AI Tool Support below)
-2. **Access to your n8n instance** (e.g., https://n8n.tech.pax8.com)
+2. **Access to your n8n instance** (e.g., <https://n8n.tech.pax8.com>)
 3. **n8n user account** with access to the project(s) you'll be developing
 4. **Git access** to the SDLC repository
 5. **n8n API key** for MCP authentication
@@ -21,7 +21,7 @@ Before starting, you need:
 Both **Cursor** and **Claude Code** are supported:
 
 - **Cursor**: Rules and skills are auto-loaded from `.cursor/rules/` and `.cursor/skills/`. Skills appear as Cursor commands.
-- **Claude Code**: Reads `CLAUDE.md` at the project root for rules and skill index. Say a trigger phrase (e.g., "get started", "reserve workflows") and the AI will read the relevant SKILL.md before executing.
+- **Claude Code**: Reads `CLAUDE.md` at the project root for rules. Slash commands (`/n8n-get-started`, `/n8n-reserve-workflows`, etc.) are available from `.claude/commands/`. You can also say a trigger phrase (e.g., "get started", "reserve workflows") and the AI will read the relevant SKILL.md before executing.
 
 ## Step 1: Set Up Your Project Workspace
 
@@ -36,9 +36,11 @@ Use the SDLC repo as a GitHub Template to create a brand-new repo with everythin
 3. Name your repo, set visibility, and create
 4. Open a new folder in Cursor (**File > Open Folder**) where you want the project to live
 5. Clone your repo into the workspace root using the Cursor terminal:
+
    ```bash
    git clone <your-new-repo-url> .
    ```
+
    > The trailing `.` is important — it clones into the current folder instead of creating a subdirectory.
 
 This gives you a clean workspace with all SDLC files already in place.
@@ -48,14 +50,19 @@ This gives you a clean workspace with all SDLC files already in place.
 Add the SDLC framework to an existing project without overwriting any of your files.
 
 1. Clone the SDLC repo somewhere accessible:
+
    ```bash
    git clone <sdlc-repository-url> ~/n8n-sdlc-source
    ```
+
 2. Run the install script targeting your project:
+
    ```bash
    ~/n8n-sdlc-source/install.sh /path/to/my-project
    ```
+
 3. To update the SDLC framework later (after pulling new changes to the source):
+
    ```bash
    cd ~/n8n-sdlc-source && git pull
    ~/n8n-sdlc-source/install.sh /path/to/my-project --update
@@ -66,8 +73,11 @@ The install script only copies framework-owned files (skills prefixed with `n8n-
 ### Path C: Manual Copy
 
 Copy these directories into your project workspace by hand:
+
 - `.cursor/rules/n8n-sdlc.md` and `.cursor/rules/n8n-sdlc-workflow-structure.md`
 - `.cursor/skills/n8n-sdlc-*/` (all 12 skill folders)
+- `.claude/commands/n8n-*.md` (Claude Code slash commands)
+- `CLAUDE.md` (Claude Code entry point)
 - `n8n-sdlc/` (config templates, schemas, docs)
 - Append the entries from `.gitignore` to your project's `.gitignore`
 
@@ -75,13 +85,15 @@ Copy these directories into your project workspace by hand:
 
 If multiple people work on the same n8n project, create a dedicated repo for that project (using any of the paths above). **Commit `n8n-sdlc/config/project.json` and `n8n-sdlc/config/id-mappings.json`** to that repo (they are shared state for the team). Adjust `n8n-sdlc/.gitignore` accordingly.
 
-Open the project directory as your Cursor workspace. The `.cursor/rules/` and `.cursor/skills/` directories will be automatically detected.
+Open the project directory in Cursor or Claude Code. Cursor auto-detects `.cursor/rules/` and `.cursor/skills/`. Claude Code reads `CLAUDE.md` and `.claude/commands/`.
 
 ## Step 2: Install the n8n MCP Server
 
-The n8n MCP server allows Cursor's AI to interact with your n8n instance.
+The n8n MCP server allows Cursor or Claude Code to interact with your n8n instance.
 
-### Option A: Via Cursor MCP Settings
+### Cursor
+
+#### Option A: Via Cursor MCP Settings
 
 1. Open Cursor Settings
 2. Navigate to MCP Servers
@@ -93,7 +105,7 @@ The n8n MCP server allows Cursor's AI to interact with your n8n instance.
      - `N8N_API_URL`: Your n8n instance URL (e.g., `https://n8n.tech.pax8.com`)
      - `N8N_API_KEY`: Your personal n8n API key
 
-### Option B: Via Config File
+#### Option B: Via Config File
 
 Add to your Cursor MCP config (typically `~/.cursor/mcp.json` or similar):
 
@@ -112,6 +124,46 @@ Add to your Cursor MCP config (typically `~/.cursor/mcp.json` or similar):
 }
 ```
 
+### Claude Code
+
+#### Option A: Via CLI
+
+```bash
+claude mcp add n8n-mcp -- npx -y n8n-mcp
+```
+
+Then set the environment variables in `.claude/settings.local.json`:
+
+```json
+{
+  "env": {
+    "N8N_API_URL": "https://n8n.tech.pax8.com",
+    "N8N_API_KEY": "your-api-key-here"
+  }
+}
+```
+
+#### Option B: Via Config File
+
+Add to your project's `.mcp.json` (at the workspace root):
+
+```json
+{
+  "mcpServers": {
+    "n8n-mcp": {
+      "command": "npx",
+      "args": ["-y", "n8n-mcp"],
+      "env": {
+        "N8N_API_URL": "https://n8n.tech.pax8.com",
+        "N8N_API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+> **Note:** `.mcp.json` is project-scoped. Add it to `.gitignore` if it contains secrets, or use environment variables.
+
 ### Getting Your n8n API Key
 
 1. Log in to your n8n instance
@@ -123,7 +175,7 @@ Add to your Cursor MCP config (typically `~/.cursor/mcp.json` or similar):
 
 ## Step 3: Verify MCP Connection
 
-In Cursor, ask the AI:
+In your IDE, ask the AI:
 
 ```
 Run an n8n health check
@@ -142,6 +194,7 @@ The Slot Creator is a helper n8n workflow that automates the creation of empty w
 3. Toggle it to **Active**
 4. Click the Webhook node ("Receive Request") and copy the **Production** webhook URL
 5. Add the URL to `n8n-sdlc/config/project.json`:
+
    ```json
    "slotCreator": {
      "webhookUrl": "https://your-n8n.example.com/webhook/sdlc/create-slots"
@@ -168,11 +221,15 @@ The Slot Creator is a helper n8n workflow that automates the creation of empty w
 Workflow JSON files live in folders specified by `localPath` in `n8n-sdlc/config/id-mappings.json` (per workflow). Two layouts are supported:
 
 **Flat layout** (default):
+
 ```
 project/
 ├── .cursor/
-│   ├── rules/              # AI behavior rules (always active)
-│   └── skills/             # AI automation skills (invoked on demand)
+│   ├── rules/              # AI behavior rules (always active in Cursor)
+│   └── skills/             # AI automation skills (single source of truth)
+├── .claude/
+│   └── commands/           # Claude Code slash commands (wrappers for skills)
+├── CLAUDE.md               # Claude Code entry point (rules + command index)
 ├── n8n-sdlc/
 │   ├── config/
 │   │   ├── project.json    # Project settings
@@ -183,6 +240,7 @@ project/
 ```
 
 **Optional categorized layout** (when `folderStrategy.mode` is `categorized`):
+
 ```
 project/
 ├── .cursor/
@@ -202,10 +260,12 @@ Each workflow's `localPath` in id-mappings points to its folder (e.g., `agents/`
 ## Step 5: Review the Configuration
 
 Check `n8n-sdlc/config/project.json` to understand the project setup:
+
 - **n8nProjectId**: Locks all MCP operations to this n8n project
 - **projectName**: Optional display name (dashboards, logs). Not used in workflow names.
 
 Check `n8n-sdlc/config/id-mappings.json` to see which workflows are registered:
+
 - Each workflow has a DEV and PROD slot with n8n IDs
 - Status shows whether each slot is active, reserved, or needs a slot
 
@@ -261,15 +321,18 @@ Workflows are classified as agents (orchestrators) or tools (called by agents). 
 The SDLC automatically commits and pushes to your **project repo** (not the SDLC framework repo) after every operation. This provides a git-based backup and audit trail alongside n8n's built-in versioning.
 
 **Branch model:**
+
 - `dev` -- day-to-day development (push, pull, seed, reserve)
 - `main` -- mirrors production (updated via PR after promotion)
 
 **What happens automatically:**
+
 - After every push/pull/seed/promote/reserve, the changed files are committed and pushed
 - Commit messages follow a structured format: `[push] DEV-Support Agent`, `[promote] Support Agent (v3)`, etc.
 - After promotion, you're offered a PR from `dev` to `main`
 
 **Setup during get-started wizard:**
+
 - The wizard asks if you have a git repo (Question 4)
 - If yes, it configures the branch names and switches to `dev`
 - If not yet, it helps you initialize one
@@ -298,7 +361,7 @@ The SDLC automatically commits and pushes to your **project repo** (not the SDLC
 
 1. Verify your API key is correct: `n8n_health_check` should succeed
 2. Check that `N8N_API_URL` points to the correct instance
-3. Restart Cursor after changing MCP configuration
+3. Restart your IDE after changing MCP configuration
 4. Verify `npx` can run: `npx -y n8n-mcp --version`
 
 ### Can't see workflows

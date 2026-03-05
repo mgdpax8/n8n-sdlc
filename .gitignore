@@ -12,6 +12,9 @@ Desktop.ini
 *.swo
 *~
 
+# Claude Code worktrees (session-specific)
+.claude/worktrees/
+
 # SDLC version marker (written by install.sh, instance-specific)
 .sdlc-version
 

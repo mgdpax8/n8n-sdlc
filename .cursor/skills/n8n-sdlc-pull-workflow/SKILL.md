@@ -23,17 +23,20 @@ Fetch a workflow from n8n and save it locally.
 ### Step 1: Identify the Workflow
 
 The user may specify the workflow by:
+
 - **Logical name** (PROD name): "Support Agent" — the id-mappings key
 - **Full name**: "DEV-Support Agent" or "Support Agent"
 - **n8n ID**: "YbM4pqxRD0AnOVhb"
 
 **Naming convention:**
+
 - Logical name = id-mappings key = PROD name (e.g., "Support Agent")
 - Full DEV name = `{devPrefix}{logical name}` (e.g., "DEV-Support Agent")
 - Full PROD name = logical name, no prefix (e.g., "Support Agent")
 - `devPrefix` comes from `n8n-sdlc/config/project.json` → `naming.devPrefix`
 
 If the user gives a logical name, determine which environment:
+
 ```
 Do you want to pull the DEV or PROD version of "Support Agent"?
 ```
@@ -41,6 +44,7 @@ Do you want to pull the DEV or PROD version of "Support Agent"?
 ### Step 2: Resolve the Workflow ID
 
 **If logical name provided:**
+
 ```
 1. Read n8n-sdlc/config/id-mappings.json
 2. Find the workflow entry by name (key = PROD name)
@@ -48,6 +52,7 @@ Do you want to pull the DEV or PROD version of "Support Agent"?
 ```
 
 **If full name provided:**
+
 ```
 1. Parse environment: DEV prefix present = dev, no prefix = prod
 2. Strip devPrefix to get logical name (if DEV)
@@ -56,6 +61,7 @@ Do you want to pull the DEV or PROD version of "Support Agent"?
 ```
 
 **If ID provided:**
+
 ```
 Use the ID directly
 ```
@@ -63,6 +69,7 @@ Use the ID directly
 ### Step 3: Validate Configuration
 
 Run the validation skill checks:
+
 1. ✅ `n8n-sdlc/config/project.json` exists
 2. ✅ Workflow ID is valid (not null/empty)
 3. ✅ If using id-mappings, entry exists
@@ -85,6 +92,7 @@ After fetching, verify the workflow is in the locked project: `data.shared[0].pr
 Use `localPath` from id-mappings.json — do not derive path from workflow type.
 
 **File path formula:**
+
 ```
 {localPath}{workflow name}.json
 ```
@@ -110,6 +118,7 @@ What would you like to do?
 ```
 
 **If user chooses backup:**
+
 ```
 1. Rename existing file to {name}.backup.json
 2. Save new content to original path
@@ -178,6 +187,7 @@ Which workflows would you like to pull?
 ```
 
 **For bulk pull:**
+
 1. Iterate through id-mappings.json entries
 2. Pull each workflow
 3. Report summary at end
@@ -232,6 +242,7 @@ This backup can be used to restore if promotion causes issues.
 ### Git Sync
 
 After saving the file locally, run the **n8n-sdlc-git-sync** skill with:
+
 - Files: the pulled workflow JSON and `n8n-sdlc/config/id-mappings.json`
 - Message: `[pull] {workflow name}`
 - Example: `[pull] Support Agent`

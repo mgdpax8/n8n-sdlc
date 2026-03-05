@@ -7,6 +7,7 @@ A portable, lightweight Software Development Lifecycle (SDLC) framework for mana
 ## Overview
 
 This system enables safe development of n8n workflows by providing:
+
 - **Dev/Prod separation** within a single n8n instance
 - **Automated ID transformation** during promotion
 - **Safety checks** to prevent accidental production changes
@@ -38,9 +39,11 @@ See [Team Onboarding](docs/Team-Onboarding.md) for all options including manual 
 After installing, open the project in Cursor and:
 
 1. **Run the setup wizard:**
+
    ```
    Say: "Get started"
    ```
+
    The wizard walks you through four questions:
    - **How are you starting?** (master workflow, project ID, or greenfield)
    - **Where to store files?** (defaults or custom folder)
@@ -50,16 +53,19 @@ After installing, open the project in Cursor and:
    It creates config and automatically discovers your workflows.
 
 2. **Create DEV slots:**
+
    ```
    Say: "Reserve workflows"
    ```
 
 3. **Populate DEV from PROD:**
+
    ```
    Say: "Seed dev"
    ```
 
 4. **Develop in DEV, promote to PROD:**
+
    ```
    Say: "Promote [workflow name] to prod"
    ```
@@ -100,6 +106,7 @@ After installing, open the project in Cursor and:
 ## Directory Structure
 
 **Flat layout** (default):
+
 ```
 .
 ├── .cursor/
@@ -115,6 +122,7 @@ After installing, open the project in Cursor and:
 ```
 
 **Categorized layout** (optional, set during setup wizard):
+
 ```
 .
 ├── .cursor/
@@ -132,6 +140,7 @@ After installing, open the project in Cursor and:
 ### Reserve and Claim Pattern
 
 Due to n8n MCP limitations, workflows must be:
+
 1. Created manually in n8n (in the correct folder)
 2. Claimed via the SDLC system to get their IDs
 3. Updated via MCP (not created)
@@ -146,6 +155,7 @@ Due to n8n MCP limitations, workflows must be:
 ### External Dependencies
 
 When a workflow references another workflow that belongs to a **different** n8n project:
+
 - The system records it in `id-mappings.json` under `externalDependencies`
 - During promotion and seeding, external `workflowId` references are **left untouched** (same ID serves both DEV and PROD)
 - External workflows are never pulled, modified, or managed by this SDLC
@@ -153,12 +163,14 @@ When a workflow references another workflow that belongs to a **different** n8n 
 ### Folder Categorization
 
 During import, you can choose how workflows are organized locally:
+
 - **Flat**: All agents in `agents/`, all tools in `tools/`
 - **Categorized**: Top-level agents in `agents/`, sub-agents in `agents/agents/`, shared tools in `tools/`, with optional grouping of dedicated tools by parent
 
 ### Git Sync
 
 Every SDLC operation that changes local files automatically commits and pushes to the project's git repo:
+
 - Day-to-day work commits to the `dev` branch
 - Promoting to PROD offers a PR from `dev` to `main`
 - The `main` branch always mirrors what's running in production

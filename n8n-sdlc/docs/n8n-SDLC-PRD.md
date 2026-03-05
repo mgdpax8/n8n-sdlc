@@ -1,9 +1,11 @@
 # Product Requirements Document (PRD)
+
 ## n8n SDLC System — Dev/Prod Workflow Management
 
 ---
 
 ### Document Info
+
 | Field | Value |
 |-------|-------|
 | **Product Name** | n8n SDLC System |
@@ -33,6 +35,7 @@ The n8n SDLC System is a lightweight development lifecycle management tool for n
 ### Opportunity
 
 A structured SDLC system can eliminate these pain points by:
+
 - Enforcing naming conventions that clearly distinguish dev from prod
 - Automating ID transformation during promotion
 - Providing validation checks at every step
@@ -263,6 +266,7 @@ project-workspace/
 **The n8n MCP server creates new workflows in the "Personal" folder, not in project folders.**
 
 This constraint requires the "Reserve and Claim" pattern:
+
 1. User manually creates empty workflows in the correct n8n project folder
 2. AI pulls these workflows to get their IDs
 3. AI "claims" these IDs for specific dev/prod workflow roles
@@ -285,11 +289,13 @@ This constraint requires the "Reserve and Claim" pattern:
 ## 9. Workflow Lifecycle
 
 ### 9.1 One-Time Setup (Greenfield)
+
 1. Say "Get started" -- choose Option 3 (greenfield), answer storage/folder questions
 2. User creates empty workflows in n8n project folder
 3. Run "Reserve Workflows" skill to claim slots
 
 ### 9.2 One-Time Setup (Brownfield)
+
 1. Say "Get started" -- choose Option 1 (master workflow) or Option 2 (full project), answer storage/folder questions
 2. Wizard creates config and automatically runs discovery
 3. Review discovery results and folder categorization
@@ -298,12 +304,14 @@ This constraint requires the "Reserve and Claim" pattern:
 6. Run "Seed DEV" to populate DEV from PROD (bottom-up order)
 
 ### 9.3 Development Cycle
+
 1. Build workflow in n8n (dev slot)
 2. Test in n8n
 3. Pull to local for review
 4. Iterate as needed
 
 ### 9.4 Promotion
+
 1. Run "Promote" skill
 2. Review transformation summary (name: strip DEV-; IDs: dev→prod for in-project refs; external refs unchanged)
 3. Confirm promotion
