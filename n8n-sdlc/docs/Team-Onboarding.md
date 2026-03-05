@@ -11,7 +11,7 @@ This repository is the **SDLC framework** -- a portable toolkit of rules, skills
 Before starting, you need:
 
 1. **Cursor IDE or Claude Code** (either works — see AI Tool Support below)
-2. **Access to your n8n instance** (e.g., https://n8n.tech.pax8.com)
+2. **Access to your n8n instance** (e.g., <https://n8n.tech.pax8.com>)
 3. **n8n user account** with access to the project(s) you'll be developing
 4. **Git access** to the SDLC repository
 5. **n8n API key** for MCP authentication
@@ -36,9 +36,11 @@ Use the SDLC repo as a GitHub Template to create a brand-new repo with everythin
 3. Name your repo, set visibility, and create
 4. Open a new folder in Cursor (**File > Open Folder**) where you want the project to live
 5. Clone your repo into the workspace root using the Cursor terminal:
+
    ```bash
    git clone <your-new-repo-url> .
    ```
+
    > The trailing `.` is important — it clones into the current folder instead of creating a subdirectory.
 
 This gives you a clean workspace with all SDLC files already in place.
@@ -48,14 +50,19 @@ This gives you a clean workspace with all SDLC files already in place.
 Add the SDLC framework to an existing project without overwriting any of your files.
 
 1. Clone the SDLC repo somewhere accessible:
+
    ```bash
    git clone <sdlc-repository-url> ~/n8n-sdlc-source
    ```
+
 2. Run the install script targeting your project:
+
    ```bash
    ~/n8n-sdlc-source/install.sh /path/to/my-project
    ```
+
 3. To update the SDLC framework later (after pulling new changes to the source):
+
    ```bash
    cd ~/n8n-sdlc-source && git pull
    ~/n8n-sdlc-source/install.sh /path/to/my-project --update
@@ -66,6 +73,7 @@ The install script only copies framework-owned files (skills prefixed with `n8n-
 ### Path C: Manual Copy
 
 Copy these directories into your project workspace by hand:
+
 - `.cursor/rules/n8n-sdlc.md` and `.cursor/rules/n8n-sdlc-workflow-structure.md`
 - `.cursor/skills/n8n-sdlc-*/` (all 12 skill folders)
 - `.claude/commands/n8n-*.md` (Claude Code slash commands)
@@ -186,6 +194,7 @@ The Slot Creator is a helper n8n workflow that automates the creation of empty w
 3. Toggle it to **Active**
 4. Click the Webhook node ("Receive Request") and copy the **Production** webhook URL
 5. Add the URL to `n8n-sdlc/config/project.json`:
+
    ```json
    "slotCreator": {
      "webhookUrl": "https://your-n8n.example.com/webhook/sdlc/create-slots"
@@ -212,6 +221,7 @@ The Slot Creator is a helper n8n workflow that automates the creation of empty w
 Workflow JSON files live in folders specified by `localPath` in `n8n-sdlc/config/id-mappings.json` (per workflow). Two layouts are supported:
 
 **Flat layout** (default):
+
 ```
 project/
 ├── .cursor/
@@ -230,6 +240,7 @@ project/
 ```
 
 **Optional categorized layout** (when `folderStrategy.mode` is `categorized`):
+
 ```
 project/
 ├── .cursor/
@@ -249,10 +260,12 @@ Each workflow's `localPath` in id-mappings points to its folder (e.g., `agents/`
 ## Step 5: Review the Configuration
 
 Check `n8n-sdlc/config/project.json` to understand the project setup:
+
 - **n8nProjectId**: Locks all MCP operations to this n8n project
 - **projectName**: Optional display name (dashboards, logs). Not used in workflow names.
 
 Check `n8n-sdlc/config/id-mappings.json` to see which workflows are registered:
+
 - Each workflow has a DEV and PROD slot with n8n IDs
 - Status shows whether each slot is active, reserved, or needs a slot
 
@@ -308,15 +321,18 @@ Workflows are classified as agents (orchestrators) or tools (called by agents). 
 The SDLC automatically commits and pushes to your **project repo** (not the SDLC framework repo) after every operation. This provides a git-based backup and audit trail alongside n8n's built-in versioning.
 
 **Branch model:**
+
 - `dev` -- day-to-day development (push, pull, seed, reserve)
 - `main` -- mirrors production (updated via PR after promotion)
 
 **What happens automatically:**
+
 - After every push/pull/seed/promote/reserve, the changed files are committed and pushed
 - Commit messages follow a structured format: `[push] DEV-Support Agent`, `[promote] Support Agent (v3)`, etc.
 - After promotion, you're offered a PR from `dev` to `main`
 
 **Setup during get-started wizard:**
+
 - The wizard asks if you have a git repo (Question 4)
 - If yes, it configures the branch names and switches to `dev`
 - If not yet, it helps you initialize one

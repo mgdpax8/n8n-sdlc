@@ -25,7 +25,7 @@ This document outlines tests to verify n8n MCP behavior before relying on it for
 
 | Component | Value |
 |-----------|-------|
-| n8n Instance | https://n8n.tech.pax8.com |
+| n8n Instance | <https://n8n.tech.pax8.com> |
 | n8n Version | 2.35.5 |
 | MCP Package | n8n-mcp (via npx) |
 | Node.js | v24.13.1 |
@@ -51,11 +51,13 @@ This was confirmed by running the same test (add sticky note) on the same workfl
 **Key difference from n8n UI behavior:** When editing on the n8n canvas, changes autosave but do NOT publish -- you must explicitly click "Publish." MCP updates bypass this and publish directly if the workflow is active.
 
 **Impact on SDLC System:**
+
 - **PROD workflows (active):** MCP push/promote publishes immediately to live. There is no draft/review stage. The change is live the instant the MCP call completes.
 - **DEV workflows (inactive):** MCP push saves changes but does not publish. Safe for development iteration.
 - **First-time PROD promotions:** The PROD slot starts inactive. After MCP push, the workflow will be saved but NOT published. The user must manually activate/publish in the n8n UI.
 
 **Required SDLC Adjustments:**
+
 1. Document that MCP updates to active workflows are immediately live (no draft step)
 2. For promote skill: after pushing to a previously-inactive PROD slot, remind user to activate/publish manually in n8n UI
 3. For push skill: if pushing to an active PROD workflow, warn that changes go live immediately
@@ -359,6 +361,7 @@ Recommended Adjustments to SDLC System:
 These tests were executed on 2026-02-23 using Cursor AI Agent with the n8n MCP server.
 
 To re-run or verify:
+
 1. Ensure n8n MCP server is enabled in Cursor
 2. Have a test workflow ID ready (non-critical, in a project folder)
 3. Run the MCP calls as documented above

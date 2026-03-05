@@ -7,6 +7,7 @@ This document defines the rules, conventions, and safety requirements for workin
 **The n8n MCP server creates new workflows in the "Personal" folder, not in project folders.**
 
 This means:
+
 - You CANNOT directly create workflows in the correct project folder via MCP
 - You MUST use the "Reserve and Claim" pattern (see below)
 - MCP is used only for UPDATING existing workflows, never for creating new ones
@@ -21,6 +22,7 @@ This means:
 - The dev prefix comes from `n8n-sdlc/config/project.json` `naming.devPrefix` (default: `DEV-`)
 
 **Examples:**
+
 - PROD: `Support Agent`, DEV: `DEV-Support Agent`
 - PROD: `List Invoices`, DEV: `DEV-List Invoices`
 - PROD: `Billing Agent`, DEV: `DEV-Billing Agent`
@@ -28,6 +30,7 @@ This means:
 ### Local File Names
 
 Workflow JSON files are saved to the folder specified by `localPath` in `id-mappings.json`:
+
 - `agents/DEV-Support Agent.json`
 - `agents/Support Agent.json`
 - `tools/DEV-List Invoices.json`
@@ -35,6 +38,7 @@ Workflow JSON files are saved to the folder specified by `localPath` in `id-mapp
 ### id-mappings.json Keys
 
 Workflow keys in `id-mappings.json` use the **PROD name** (the real name):
+
 ```json
 {
   "workflows": {
@@ -61,6 +65,7 @@ If these files don't exist, run the **Getting Started** or **Import Project** sk
 Because MCP cannot create workflows in the correct folder:
 
 ### Automated Path (Slot Creator configured)
+
 1. **AI calls the Slot Creator webhook** to bulk-create empty workflows and transfer them to the project folder
 2. **AI auto-assigns slots** (empty slots are fungible)
 3. **AI claims the slots** by updating `n8n-sdlc/config/id-mappings.json`
@@ -69,6 +74,7 @@ Because MCP cannot create workflows in the correct folder:
 The Slot Creator is configured via `slotCreator.webhookUrl` in `project.json`. See `n8n-sdlc/helpers/README.md`.
 
 ### Manual Path (No Slot Creator)
+
 1. **User creates empty workflows** manually in n8n UI within the project folder
 2. **AI pulls these workflows** to discover their IDs
 3. **AI auto-assigns slots** and confirms the mapping with the user
@@ -86,6 +92,7 @@ Before any `n8n_update_full_workflow`, `n8n_update_partial_workflow`, or **push*
 ## External Dependencies
 
 When a workflow references another workflow (via `workflowId`) that belongs to a **different** n8n project:
+
 - **Never pull, modify, or manage** that workflow
 - Record it in `id-mappings.json` under `externalDependencies`
 - During promotion, leave external `workflowId` references **untouched** (same ID serves both DEV and PROD)
@@ -127,6 +134,7 @@ In addition to standard checks:
 3. Save backup of current prod state locally before overwriting
 
 **Example confirmation prompt:**
+
 ```
 PRODUCTION UPDATE WARNING
 
@@ -153,14 +161,17 @@ When promoting from dev to prod, transform:
 1. **Workflow name**: Strip the dev prefix (`DEV-Support Agent` -> `Support Agent`)
 
 2. **workflowId references** (in-project only):
+
    ```json
    "workflowId": {
      "value": "{dev-workflow-id}"  // -> "{prod-workflow-id}"
    }
    ```
+
    External dependency references are left untouched.
 
 3. **Credential IDs** (only if mapped in project.json):
+
    ```json
    "credentials": {
      "type": {
@@ -194,6 +205,7 @@ Each workflow's `localPath` in `id-mappings.json` specifies the folder where its
 To resolve a file: `{localPath}{workflow name}.json` (e.g., `agents/DEV-Support Agent.json`).
 
 **Self-healing:** If a file is not found at the expected `localPath`:
+
 1. Search the workspace by filename
 2. If found elsewhere: ask user if they want to update the mapping
 3. If multiple matches: list them and ask which is correct
@@ -272,6 +284,7 @@ Set `git.enabled` to `false` in `n8n-sdlc/config/project.json` to skip all git o
 ## File Organization
 
 Default flat layout:
+
 ```
 project/
 ├── .cursor/
@@ -287,6 +300,7 @@ project/
 ```
 
 Categorized layout (if chosen during setup wizard):
+
 ```
 project/
 ├── .cursor/

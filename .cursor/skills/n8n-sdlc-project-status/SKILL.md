@@ -34,6 +34,7 @@ Read `n8n-sdlc/config/project.json` and `n8n-sdlc/config/id-mappings.json`.
 ### Step 2: List All Workflows from Registry
 
 For each workflow in `id-mappings.json` workflows, gather:
+
 - Logical name (PROD name = id-mappings key)
 - Type (agent/tool)
 - localPath
@@ -47,6 +48,7 @@ For each workflow in `id-mappings.json` workflows, gather:
 Call `n8n_list_workflows` with `projectId` to get current state of all workflows in n8n.
 
 For each registered workflow, compare:
+
 - Does the ID still exist in n8n?
 - Is it active or inactive?
 - What is the remote `updatedAt` vs our audit timestamps?

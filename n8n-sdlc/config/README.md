@@ -5,7 +5,9 @@ This directory contains the configuration files for the n8n SDLC system.
 ## Files
 
 ### `project.json`
+
 Project-level configuration including:
+
 - **n8n Project ID** (`n8nProjectId`): n8n project ID from the workflow URL (`projectId=...`). Locks all MCP operations to this project. Can be derived automatically from a master workflow.
 - Project name (optional, display only)
 - Discovery mode (`master` or `full-project`) and master workflow ID
@@ -18,7 +20,9 @@ Project-level configuration including:
 **Created by**: `n8n-sdlc-getting-started` skill (the setup wizard) or manually from template
 
 ### `id-mappings.json`
+
 Maps workflow names to their n8n IDs:
+
 - Workflow ID mappings (dev and prod) keyed by PROD name (the real workflow name)
 - `localPath` for each workflow (folder where JSON files are stored)
 - External dependencies (cross-project workflow references)
@@ -31,6 +35,7 @@ Maps workflow names to their n8n IDs:
 ## Templates
 
 The `.template` files show the expected structure with examples:
+
 - `project.json.template` - Copy and modify for manual setup
 - `id-mappings.json.template` - Reference for structure
 
@@ -44,11 +49,13 @@ The `.template` files show the expected structure with examples:
 This repository is the **SDLC framework** -- a portable toolkit that any team member can pull into their own n8n project workspace.
 
 **Committed to git (the framework):**
+
 - Templates (`project.json.template`, `id-mappings.json.template`)
 - JSON Schemas (`project.schema.json`, `id-mappings.schema.json`)
 - This README
 
 **Gitignored (per-project, instance-specific):**
+
 - `project.json` -- contains n8n project ID and folder name specific to the user's n8n project
 - `id-mappings.json` -- contains workflow IDs specific to the user's n8n project
 

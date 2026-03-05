@@ -29,6 +29,7 @@ Ensures all prerequisites are met before performing operations that could affect
 ### Level 1: Configuration Validation
 
 **Check 1.1: project.json exists**
+
 ```
 Path: n8n-sdlc/config/project.json
 Required: Yes
@@ -39,6 +40,7 @@ If missing:
 ```
 
 **Check 1.2: project.json is valid**
+
 ```
 Required fields:
 - n8nProjectId (non-empty string; from workflow URL projectId=...; locks MCP to this project)
@@ -50,6 +52,7 @@ If invalid:
 ```
 
 **Check 1.3: id-mappings.json exists (for push/promote)**
+
 ```
 Path: n8n-sdlc/config/id-mappings.json
 Required: For push and promote operations
@@ -60,6 +63,7 @@ If missing:
 ```
 
 **Check 1.4: Workflow in configured project (when validating workflow from n8n)**
+
 ```
 When the workflow was fetched from n8n (n8n_get_workflow with mode: "full"):
 Compare data.shared[0].projectId to n8n-sdlc/config/project.json n8nProjectId.
@@ -71,6 +75,7 @@ If they do not match:
 ```
 
 **Check 1.5: project.json structural validation**
+
 ```
 Read n8n-sdlc/config/project.schema.json and validate project.json against it:
 
@@ -96,6 +101,7 @@ If invalid:
 ```
 
 **Check 1.6: id-mappings.json structural validation**
+
 ```
 Read n8n-sdlc/config/id-mappings.schema.json and validate id-mappings.json against it:
 
@@ -127,6 +133,7 @@ If invalid:
 ```
 
 **Check 1.7: Cross-file consistency**
+
 ```
 Validate consistency between project.json and id-mappings.json:
 
@@ -151,6 +158,7 @@ If invalid:
 ### Level 2: Naming Convention Validation
 
 **Check 2.1: Workflow name follows pattern**
+
 ```
 Expected pattern:
 - DEV: name starts with devPrefix (from n8n-sdlc/config/project.json naming.devPrefix, typically "DEV-")
@@ -175,6 +183,7 @@ If invalid:
 ```
 
 **Check 2.2: Environment determination**
+
 ```
 - Name starts with devPrefix (e.g., "DEV-") → Development environment
 - Otherwise → Production environment
@@ -185,6 +194,7 @@ No "unknown prefix" error. All names are either dev or prod.
 ### Level 3: ID Mapping Validation
 
 **Check 3.1: Workflow exists in mappings**
+
 ```
 Extract logical name from full workflow name:
 - If name starts with devPrefix: logicalName = name.slice(devPrefix.length)
@@ -198,6 +208,7 @@ If not found:
 ```
 
 **Check 3.2: localPath validation**
+
 ```
 For the workflow's id-mappings entry:
 1. Verify localPath exists and is a non-empty string
@@ -220,6 +231,7 @@ If folder or file not found:
 ```
 
 **Check 3.3: Target environment ID exists**
+
 ```
 For push to DEV: Check dev.id is not null
 For push to PROD: Check prod.id is not null
@@ -231,6 +243,7 @@ If null:
 ```
 
 **Check 3.4: No duplicate IDs**
+
 ```
 Scan all mappings for duplicate IDs
 Each n8n ID should appear only once
@@ -244,6 +257,7 @@ If duplicate:
 ### Level 4: Reference Validation (Promote Only)
 
 **Check 4.1: All workflow references have target mappings**
+
 ```
 Scan workflow for:
 - @n8n/n8n-nodes-langchain.toolWorkflow nodes
@@ -269,6 +283,7 @@ If any in-project reference unmapped:
 ```
 
 **Check 4.2: All credential mappings exist (if needed)**
+
 ```
 Scan workflow for credential references
 Check if any credentials are in project.json credential mappings
@@ -284,6 +299,7 @@ If missing:
 ## Output Format
 
 ### Validation Passed
+
 ```
 ✅ VALIDATION PASSED
 
@@ -305,6 +321,7 @@ Ready for operation.
 ```
 
 ### Validation Failed
+
 ```
 ❌ VALIDATION FAILED
 
@@ -328,6 +345,7 @@ Operation blocked. Fix errors before proceeding.
 ## How Other Skills Use Validation
 
 ### n8n-sdlc-push-workflow
+
 ```
 1. Call validate with level: "mapping"
 2. If validation fails, stop and show errors
@@ -335,6 +353,7 @@ Operation blocked. Fix errors before proceeding.
 ```
 
 ### n8n-sdlc-promote-workflow
+
 ```
 1. Call validate with level: "references"
 2. If validation fails, stop and show errors

@@ -32,6 +32,7 @@ This is the inverse of the n8n-sdlc-promote-workflow skill.
 ### Step 1: Identify the Workflow to Seed
 
 Accept workflow by:
+
 - **Logical name**: "Support Agent" (the id-mappings key / PROD name)
 - **"all"**: Seed all workflows that have both PROD active and DEV reserved
 - **List**: "Support Agent, List Invoices, Billing Agent"
@@ -70,12 +71,14 @@ Bottom-up ordering ensures that when seeding an agent, all its tool/sub-agent DE
 For each workflow to seed:
 
 **If local PROD file exists:**
+
 ```
 Read from: {localPath}{workflow name}.json
 e.g., agents/Support Agent.json
 ```
 
 **If no local file:**
+
 ```
 MCP Tool: n8n_get_workflow
 Parameters:
@@ -101,6 +104,7 @@ Check `n8n-sdlc/config/id-mappings.json`:
 ```
 
 **If dev.id is null:**
+
 ```
 ERROR: No DEV slot reserved for "Support Agent"
 
@@ -276,6 +280,7 @@ After successful push:
 ### Step 11: Report Completion
 
 **Single workflow:**
+
 ```
 SEED COMPLETE
 
@@ -294,6 +299,7 @@ You can now develop in the DEV slot.
 ```
 
 **Bulk seed (all workflows):**
+
 ```
 SEED COMPLETE: {N} workflows seeded
 
@@ -326,6 +332,7 @@ Run "project status" to see the full state.
 ### Git Sync
 
 After a successful seed, run the **n8n-sdlc-git-sync** skill with:
+
 - Files: the seeded DEV workflow JSON and `n8n-sdlc/config/id-mappings.json`
 - Message: `[seed] {DEV workflow name} from PROD`
 - Example: `[seed] DEV-Support Agent from PROD`

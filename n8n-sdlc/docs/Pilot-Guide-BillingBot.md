@@ -5,6 +5,7 @@ This guide walks through using the n8n SDLC system with the Billing Bot project 
 ## Prerequisites
 
 Before starting:
+
 - [ ] n8n MCP server enabled in Cursor
 - [ ] Access to n8n instance with Billing Bot workflows
 - [ ] MCP behavior tested (see `MCP-Test-Plan.md`)
@@ -27,6 +28,7 @@ example/
 ```
 
 These are the EXISTING workflows. The pilot will:
+
 1. Initialize the SDLC system for Billing Bot
 2. Register existing workflow IDs
 3. Set up dev/prod slots
@@ -45,6 +47,7 @@ User: "Set up n8n project for Billing Bot"
 ```
 
 **Provide:**
+
 - Project Name: `Billing Bot` (display only, not used in workflow names)
 - n8n Folder Name: [Your actual n8n folder name, e.g., "AITO - Billing Bot"]
 
@@ -88,10 +91,12 @@ Identify the n8n IDs for each existing workflow. From the example files:
 ### Step 2.2: Decide Dev/Prod Strategy
 
 **Option A: Current workflows become DEV**
+
 - Rename current workflows to DEV-* (e.g., `Invoice Agent` → `DEV-Invoice Agent`)
 - Reserve new slots for PROD copies
 
 **Option B: Current workflows become PROD**
+
 - Current workflows are already production
 - Create new DEV slots for development
 
@@ -168,6 +173,7 @@ Rename existing workflows to follow the naming convention.
 ### Step 3.1: Update DEV Workflows in n8n
 
 For each existing workflow, rename to:
+
 - `Invoice Agent` → `DEV-Invoice Agent`
 - `Billing Bot MVP` → `DEV-Billing Bot MVP`
 - `List Invoices` → `DEV-List Invoices`
@@ -178,6 +184,7 @@ This can be done via MCP or manually in n8n UI.
 ### Step 3.2: Update PROD Slot Names
 
 Rename the empty PROD slots to their real names (no prefix):
+
 - → `Invoice Agent`
 - → `Billing Bot MVP`
 - → `List Invoices`
@@ -226,6 +233,7 @@ User: "Promote List Invoices to prod"
 ### Step 5.2: Review Transformation Report
 
 The AI should show:
+
 - Name transformation: DEV- prefix stripped (DEV-List Invoices → List Invoices)
 - ID transformation: dev ID → prod ID
 - No tool references (simple workflow)
@@ -255,6 +263,7 @@ User: "Promote Invoice Agent to prod"
 ### Step 6.2: Review Transformation Report
 
 Should show:
+
 - Name transformation (DEV-Invoice Agent → Invoice Agent)
 - Multiple tool reference transformations (List Invoices, Get Totals, etc.)
 - Credential transformations (if any)
@@ -263,6 +272,7 @@ Should show:
 ### Step 6.3: Verify All References Transformed
 
 After promotion, open `Invoice Agent` (PROD) in n8n:
+
 1. Check each tool node
 2. Verify workflowId points to PROD versions (in-project refs)
 3. Verify external workflow references (if any) are unchanged
@@ -273,6 +283,7 @@ After promotion, open `Invoice Agent` (PROD) in n8n:
 ## Pilot Success Criteria
 
 ### Must Have
+
 - [ ] Project initialized with config files
 - [ ] All workflows registered in id-mappings.json
 - [ ] Can pull DEV workflow to local
@@ -282,11 +293,13 @@ After promotion, open `Invoice Agent` (PROD) in n8n:
 - [ ] All in-project IDs transformed correctly during promotion
 
 ### Should Have
+
 - [ ] Backup created before PROD updates
 - [ ] Audit trail updated in id-mappings.json
 - [ ] Validation catches missing PROD mappings
 
 ### Nice to Have
+
 - [ ] Tags updated during promotion
 - [ ] Credentials transformed (if mapped)
 
@@ -295,12 +308,15 @@ After promotion, open `Invoice Agent` (PROD) in n8n:
 ## Troubleshooting
 
 ### Problem: Workflow ID not found
+
 **Solution:** Check if workflow is registered in id-mappings.json. Run n8n-sdlc-reserve-workflows if needed.
 
 ### Problem: Missing PROD mapping during promote
+
 **Solution:** Reserve PROD slot for the referenced workflow first, then retry promotion.
 
 ### Problem: Promotion succeeded but workflow doesn't work
+
 **Solution:** Check that all in-project tool references point to PROD IDs. Verify external references are correct. Verify credentials are correct for PROD.
 
 ---

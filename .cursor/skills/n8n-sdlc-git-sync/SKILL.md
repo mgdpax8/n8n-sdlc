@@ -32,6 +32,7 @@ git remote -v
 If not a git repo or no remote: warn and skip.
 
 Read `n8n-sdlc/config/project.json` for git settings:
+
 - `git.devBranch` (default: `"dev"`)
 - `git.mainBranch` (default: `"main"`)
 - `git.autoPush` (default: `true`)
@@ -45,16 +46,20 @@ git branch --show-current
 ```
 
 **For non-promote operations** (push, pull, seed, import, reserve):
+
 - If on `devBranch`: proceed normally
 - If on `mainBranch`: warn the user:
+
   ```
   You are on the main branch. Day-to-day work should be on the dev branch.
   Switch to dev? (yes/no)
   ```
+
   If yes: `git checkout {devBranch}`
   If no: proceed but note the warning
 
 **For promote operations**:
+
 - Any branch is acceptable (the commit goes to current branch; PR handles the merge)
 
 ## Step 3: Pull Before Push
@@ -110,6 +115,7 @@ Each calling skill provides a prefix:
 ```
 
 If there are no changes to commit (nothing staged), skip the commit and note:
+
 ```
 No changes to commit (files unchanged).
 ```
@@ -123,12 +129,14 @@ git push origin {current branch}
 ```
 
 If push fails (e.g., remote has new commits):
+
 ```bash
 git pull --rebase origin {current branch}
 git push origin {current branch}
 ```
 
 If autoPush is `false`, inform the user:
+
 ```
 Changes committed locally. Run "git push" when ready.
 ```
@@ -150,6 +158,7 @@ This keeps the main branch in sync with what's running in production.
 If the user says yes:
 
 **Try `gh` CLI first:**
+
 ```bash
 gh pr create \
   --base {mainBranch} \
@@ -159,6 +168,7 @@ gh pr create \
 ```
 
 **If `gh` is not available**, provide manual instructions:
+
 ```
 The gh CLI is not available. Create the PR manually:
 
@@ -177,6 +187,7 @@ Git: committed and pushed to {branch}
 ```
 
 Or if skipped:
+
 ```
 Git: sync skipped (git.enabled is false)
 ```
