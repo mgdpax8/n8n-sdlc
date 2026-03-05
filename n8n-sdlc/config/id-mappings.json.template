@@ -45,26 +45,9 @@
     }
   ],
 
-  "credentials": {
-    "$comment": "Map credential aliases to their environment-specific n8n IDs. Only needed for credentials that differ between dev/prod.",
-    
-    "$example_slack": {
-      "dev": "slack-sandbox-cred-id",
-      "prod": "slack-prod-cred-id"
-    }
-  },
-
   "metadata": {
     "projectName": "My Project",
     "createdAt": "2026-02-05T00:00:00.000Z",
     "lastModified": "2026-02-05T00:00:00.000Z"
-  },
-
-  "statusValues": {
-    "$comment": "Reference - valid status values for workflow mappings",
-    "active": "Workflow is deployed and in use",
-    "reserved": "Slot claimed but workflow not yet built",
-    "needs-slot": "Needs a reserved slot before promotion",
-    "not-started": "Not yet needed"
   }
 }

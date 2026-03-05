@@ -262,6 +262,7 @@ After the core questions:
 
 ```json
 {
+  "$schema": "./project.schema.json",
   "n8nProjectId": "{derived or provided}",
   "projectName": "",
   "workflowsDir": "",
@@ -290,14 +291,15 @@ Field notes:
 
 ```json
 {
+  "$schema": "./id-mappings.schema.json",
   "workflows": {},
   "externalDependencies": {},
   "reservedSlots": [],
-  "credentials": {},
   "metadata": {
     "projectName": "",
     "createdAt": "{ISO timestamp}",
-    "lastModified": "{ISO timestamp}"
+    "lastModified": "{ISO timestamp}",
+    "seedOrder": []
   }
 }
 ```

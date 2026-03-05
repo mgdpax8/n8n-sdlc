@@ -32,17 +32,6 @@
         "$ref": "#/definitions/reservedSlot"
       }
     },
-    "credentials": {
-      "type": "object",
-      "description": "Credential ID mappings between environments. Same structure as project.json credentials but tracked here for audit.",
-      "additionalProperties": {
-        "type": "object",
-        "properties": {
-          "dev": { "type": "string" },
-          "prod": { "type": "string" }
-        }
-      }
-    },
     "metadata": {
       "type": "object",
       "required": ["projectName", "createdAt", "lastModified"],
@@ -58,14 +47,14 @@
         "lastModified": {
           "type": "string",
           "format": "date-time"
+        },
+        "seedOrder": {
+          "type": "array",
+          "description": "Bottom-up seeding order computed during import. Leaf tools first, then sub-agents, then top-level agents. Used by the seed skill to avoid recomputing the dependency graph.",
+          "items": { "type": "string" }
         }
       },
       "additionalProperties": false
-    },
-    "statusValues": {
-      "type": "object",
-      "description": "Reference documentation for valid status values. Not used programmatically.",
-      "additionalProperties": { "type": "string" }
     }
   },
   "additionalProperties": false,
