@@ -292,7 +292,7 @@ saved but NOT published. User must manually activate/publish in n8n UI.
 4. Compare expected vs actual
 ```
 
-### Step 11.5: Post-Promotion Validation
+### Step 12: Post-Promotion Validation
 
 Run n8n's built-in validation on the promoted PROD workflow:
 
@@ -328,7 +328,7 @@ The workflow was pushed but may have issues. Review the errors above.
 Consider rolling back if critical errors are present.
 ```
 
-### Step 12: Update Audit Trail
+### Step 13: Update Audit Trail
 
 Update `n8n-sdlc/config/id-mappings.json`:
 
@@ -350,7 +350,7 @@ Update `n8n-sdlc/config/id-mappings.json`:
 }
 ```
 
-### Step 13: Check Activation State
+### Step 14: Check Activation State
 
 After pushing, check whether the PROD workflow was active or inactive:
 
@@ -367,7 +367,7 @@ The content has been saved but is NOT live yet.
 To make it live, you must activate/publish it manually in the n8n UI.
 ```
 
-### Step 14: Confirm Completion
+### Step 15: Confirm Completion
 
 ```
 PROMOTION SUCCESSFUL
@@ -434,7 +434,7 @@ If promotion causes issues:
 3. Verify PROD is restored
 ```
 
-### Step 15: Git Sync and PR Offer
+### Step 16: Git Sync and PR Offer
 
 Run the **n8n-sdlc-git-sync** skill with:
 - Files: backup file and `n8n-sdlc/config/id-mappings.json`

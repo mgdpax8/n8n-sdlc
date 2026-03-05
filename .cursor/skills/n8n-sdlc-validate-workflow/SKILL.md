@@ -19,7 +19,7 @@ Ensures all prerequisites are met before performing operations that could affect
 
 | Level | When Used | Checks Performed |
 |-------|-----------|------------------|
-| **Config** | All operations | project.json, id-mappings.json exist |
+| **Config** | All operations | Config files exist, pass schema validation, cross-file consistency |
 | **Naming** | Push, Promote | Workflow name follows convention |
 | **Mapping** | Push, Promote | Workflow ID exists in mappings |
 | **References** | Promote only | All workflowId refs have target env mappings |
@@ -68,6 +68,84 @@ If they do not match:
   ❌ FAIL: Workflow is not in the configured project
   The workflow belongs to a different n8n project. Only workflows in the locked project (n8nProjectId) may be used.
   Fix: Use a workflow from the correct project, or update n8nProjectId in project.json if you intend to use this project.
+```
+
+**Check 1.5: project.json structural validation**
+```
+Read n8n-sdlc/config/project.schema.json and validate project.json against it:
+
+Required fields:
+- n8nProjectId: non-empty string
+- naming: object containing devPrefix (string)
+- version: string
+
+Type validation (when present):
+- projectName, workflowsDir, discoveryMode, masterWorkflowId: string
+- folderStrategy, tags, credentials, git, slotCreator: object
+
+Enum validation (when present):
+- discoveryMode must be one of: "master", "full-project"
+- folderStrategy.mode must be one of: "flat", "categorized"
+- folderStrategy.dedicatedTools must be one of: "flat", "grouped", "alongside"
+
+No unknown top-level keys allowed (schema has additionalProperties: false).
+
+If invalid:
+  ❌ FAIL: project.json schema violation: {specific issue}
+  Fix: Correct the field in n8n-sdlc/config/project.json per the schema
+```
+
+**Check 1.6: id-mappings.json structural validation**
+```
+Read n8n-sdlc/config/id-mappings.schema.json and validate id-mappings.json against it:
+
+Required fields:
+- workflows: object
+- metadata: object containing projectName (string), createdAt (string), lastModified (string)
+
+Each workflow entry must have:
+- type: one of "agent", "tool"
+- localPath: string
+- dev: object with id (string or null) and status (string)
+- prod: object with id (string or null) and status (string)
+
+Status enum validation:
+- dev.status and prod.status must be one of: "active", "reserved", "needs-slot", "not-started"
+
+externalDependencies entries (when present):
+- id: string
+- referencedBy: array of strings
+
+reservedSlots entries (when present):
+- id: string
+
+No unknown top-level keys allowed.
+
+If invalid:
+  ❌ FAIL: id-mappings.json schema violation: {specific issue}
+  Fix: Correct the field in n8n-sdlc/config/id-mappings.json per the schema
+```
+
+**Check 1.7: Cross-file consistency**
+```
+Validate consistency between project.json and id-mappings.json:
+
+1. metadata.projectName in id-mappings.json must match projectName
+   in project.json (if both are set and non-empty)
+
+2. All workflows with dev.status "active" must have a non-null dev.id
+
+3. All workflows with prod.status "active" must have a non-null prod.id
+
+4. No duplicate IDs across all dev.id values (excluding null)
+
+5. No duplicate IDs across all prod.id values (excluding null)
+
+6. No ID appears as both a dev.id and a prod.id of different workflows
+
+If invalid:
+  ❌ FAIL: Cross-file consistency error: {specific issue}
+  Fix: {specific fix instruction}
 ```
 
 ### Level 2: Naming Convention Validation
@@ -215,7 +293,10 @@ Target ID: abc123
 
 All checks passed:
   ✓ project.json exists and valid
+  ✓ project.json structural validation passed
   ✓ id-mappings.json exists
+  ✓ id-mappings.json structural validation passed
+  ✓ Cross-file consistency checks passed
   ✓ Naming convention correct
   ✓ Workflow mapped with valid ID
   ✓ localPath valid and file exists
@@ -281,7 +362,10 @@ User: "validate for promotion Support Agent"
 |-------|-------|--------------|
 | project.json exists | 1 | All operations |
 | project.json valid | 1 | All operations |
+| project.json structural validation | 1 | All operations |
 | id-mappings.json exists | 1 | Push, Promote |
+| id-mappings.json structural validation | 1 | Push, Promote |
+| Cross-file consistency | 1 | Push, Promote |
 | Name follows convention | 2 | Push, Promote |
 | Environment determination | 2 | Push, Promote |
 | Workflow in mappings | 3 | Push, Promote |

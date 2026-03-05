@@ -52,6 +52,21 @@ log_warn()  { echo -e "${YELLOW}[warn]${NC}  $*"; }
 log_err()   { echo -e "${RED}[error]${NC} $*"; }
 log_dry()   { echo -e "${YELLOW}[dry]${NC}   $*"; }
 
+# Returns 0 (true) if $1 > $2 using numeric semver comparison
+compare_semver_gt() {
+    local IFS='.'
+    read -r -a a <<< "$1"
+    read -r -a b <<< "$2"
+    local max=$(( ${#a[@]} > ${#b[@]} ? ${#a[@]} : ${#b[@]} ))
+    for (( i=0; i<max; i++ )); do
+        local ai=${a[i]:-0}
+        local bi=${b[i]:-0}
+        if (( ai > bi )); then return 0
+        elif (( ai < bi )); then return 1; fi
+    done
+    return 1
+}
+
 is_skip_config() {
     local rel_path="$1"
     for skip in "${SKIP_CONFIGS[@]}"; do
@@ -227,7 +242,7 @@ if [[ -f "$TARGET/.sdlc-version" ]]; then
         exit 0
     fi
 
-    if [[ "$INSTALLED" > "$VERSION" ]]; then
+    if compare_semver_gt "$INSTALLED" "$VERSION"; then
         log_warn "Installed version ($INSTALLED) is newer than source ($VERSION)"
     fi
 fi
