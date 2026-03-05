@@ -42,7 +42,8 @@ Accept workflow by:
 If seeding multiple workflows, use the persisted order or compute it:
 
 **First, check `metadata.seedOrder` in id-mappings.json:**
-```
+
+```text
 If metadata.seedOrder exists and is a non-empty array:
   1. Filter to only workflows being seeded (in case user specified a subset)
   2. Preserve the stored order for matching workflows
@@ -50,7 +51,8 @@ If metadata.seedOrder exists and is a non-empty array:
 ```
 
 **If seedOrder is missing or empty, compute bottom-up order:**
-```
+
+```text
 1. Build dependency graph from id-mappings and workflow JSON
 2. Identify leaf nodes (workflows that don't call other in-project workflows)
 3. Process leaves first, then their parents, then grandparents, etc.
