@@ -58,13 +58,5 @@
     "projectName": "My Project",
     "createdAt": "2026-02-05T00:00:00.000Z",
     "lastModified": "2026-02-05T00:00:00.000Z"
-  },
-
-  "statusValues": {
-    "$comment": "Reference - valid status values for workflow mappings",
-    "active": "Workflow is deployed and in use",
-    "reserved": "Slot claimed but workflow not yet built",
-    "needs-slot": "Needs a reserved slot before promotion",
-    "not-started": "Not yet needed"
   }
 }

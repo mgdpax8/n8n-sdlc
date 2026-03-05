@@ -61,11 +61,6 @@
         }
       },
       "additionalProperties": false
-    },
-    "statusValues": {
-      "type": "object",
-      "description": "Reference documentation for valid status values. Not used programmatically.",
-      "additionalProperties": { "type": "string" }
     }
   },
   "additionalProperties": false,
