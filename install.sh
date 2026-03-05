@@ -243,6 +243,13 @@ echo ""
 install_skills "$TARGET"
 install_rules "$TARGET"
 install_sdlc_folder "$TARGET"
+
+# Copy CLAUDE.md for Claude Code compatibility
+if [[ -f "$SCRIPT_DIR/CLAUDE.md" ]]; then
+    log_info "Claude Code config (CLAUDE.md)"
+    copy_file "$SCRIPT_DIR/CLAUDE.md" "$TARGET/CLAUDE.md" "CLAUDE.md"
+fi
+
 write_sdlc_version "$TARGET"
 
 echo ""
@@ -262,7 +269,7 @@ else
     if ! $UPDATE; then
         echo ""
         echo "Next steps:"
-        echo "  1. Open the project in Cursor"
+        echo "  1. Open the project in Cursor or Claude Code"
         echo "  2. Say \"get started\" to the AI to initialize your n8n project"
     fi
 fi

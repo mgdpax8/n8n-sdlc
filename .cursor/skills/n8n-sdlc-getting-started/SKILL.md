@@ -155,7 +155,49 @@ Do you have a git repo set up for this n8n project?
 1. Set `git.enabled` to `false` in config
 2. All git sync steps in other skills will be skipped silently
 
-### Question 5: .gitignore
+### Question 5: Slot Creator (Optional)
+
+```
+Would you like to set up the Slot Creator for automated workflow creation?
+
+The Slot Creator is a helper workflow that runs in your n8n instance.
+It lets the AI agent automatically create empty workflow slots in your
+project folder, instead of you creating them manually in the UI.
+
+1. Yes -- I'll walk you through importing and configuring it
+2. Skip -- I'll set this up later (or use manual slot creation)
+```
+
+**Option 1 -- Yes:**
+1. Tell the user to import the helper workflow:
+   ```
+   To set up the Slot Creator:
+
+   1. In n8n, go to your project folder
+   2. Import the file: n8n-sdlc/helpers/slot-creator-workflow.json
+   3. Open the imported "SDLC Slot Creator" workflow
+   4. Toggle it to Active
+   5. Click the Webhook node ("Receive Request")
+   6. Copy the Production webhook URL
+
+   Paste the webhook URL here when ready.
+   ```
+2. Wait for the user to provide the webhook URL
+3. Store in config as `slotCreator.webhookUrl`
+4. Confirm:
+   ```
+   Slot Creator configured! The reserve step will use this
+   webhook to auto-create workflow slots.
+
+   Note: You'll need an n8n API key when the reserve step runs.
+   The API key is asked for at that time and is never stored.
+   ```
+
+**Option 2 -- Skip:**
+1. Leave `slotCreator.webhookUrl` as `""` in config
+2. The reserve skill will fall back to manual slot creation
+
+### Question 6: .gitignore
 
 Check if `.gitignore` exists in the workspace root.
 
@@ -208,7 +250,7 @@ Want me to append these? (Your existing entries won't be changed.)
 
 Only append entries the user approves. Never remove or modify existing entries.
 
-### Optional: Project name and credentials
+### Question 7 (Optional): Project name and credentials
 
 After the core questions:
 1. **Project Name** (optional): A display name for logs (e.g., `Billing Bot`). Can be added later.
@@ -228,6 +270,7 @@ After the core questions:
   "naming": { "devPrefix": "DEV-" },
   "folderStrategy": { "mode": "flat", "dedicatedTools": "flat" },
   "git": { "enabled": true, "devBranch": "dev", "mainBranch": "main", "autoPush": true },
+  "slotCreator": { "webhookUrl": "" },
   "tags": { "dev": ["environment:dev"], "prod": ["environment:prod"] },
   "credentials": {},
   "createdAt": "{ISO timestamp}",
@@ -241,6 +284,7 @@ Field notes:
 - `workflowsDir`: User's chosen base path, or `""` for workspace root.
 - `folderStrategy`: From Question 3 answers.
 - `git`: From Question 4 answers. Omit or set `enabled: false` if no git.
+- `slotCreator`: From Question 5. Empty string if skipped.
 
 ### `n8n-sdlc/config/id-mappings.json`
 

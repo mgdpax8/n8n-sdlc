@@ -23,6 +23,9 @@
     "mainBranch": "main",
     "autoPush": true
   },
+  "slotCreator": {
+    "webhookUrl": ""
+  },
   "credentials": {
     "$comment": "Map credentials that differ between dev and prod. Format: alias -> {dev: id, prod: id}",
     "$example_slack": {

@@ -60,12 +60,22 @@ If these files don't exist, run the **Getting Started** or **Import Project** sk
 
 Because MCP cannot create workflows in the correct folder:
 
-1. **User creates empty workflows** manually in n8n UI within the project folder
-2. **AI pulls these workflows** to discover their IDs
+### Automated Path (Slot Creator configured)
+1. **AI calls the Slot Creator webhook** to bulk-create empty workflows and transfer them to the project folder
+2. **AI auto-assigns slots** (empty slots are fungible)
 3. **AI claims the slots** by updating `n8n-sdlc/config/id-mappings.json`
 4. **AI updates the workflows** via MCP with actual content
 
-This is the ONLY way to get workflows into the correct n8n folder.
+The Slot Creator is configured via `slotCreator.webhookUrl` in `project.json`. See `n8n-sdlc/helpers/README.md`.
+
+### Manual Path (No Slot Creator)
+1. **User creates empty workflows** manually in n8n UI within the project folder
+2. **AI pulls these workflows** to discover their IDs
+3. **AI auto-assigns slots** and confirms the mapping with the user
+4. **AI claims the slots** by updating `n8n-sdlc/config/id-mappings.json`
+5. **AI updates the workflows** via MCP with actual content
+
+Both paths are the ONLY way to get workflows into the correct n8n folder.
 
 ## Project Scoping (MCP Lock to One Project)
 
@@ -299,5 +309,6 @@ project/
 | Promote DEV->PROD | Yes - show changes + "confirm" | Both configs + all in-project refs mapped | Auto commit+push + offer PR |
 | Seed DEV from PROD | No | project.json, id-mappings.json | Auto commit+push |
 | Import project | User guides discovery | project.json | Auto commit+push (initial) |
-| Reserve slots | User selects from list | project.json | Auto commit+push |
+| Reserve slots (automated) | API key + confirm mapping | project.json, slotCreator | Auto commit+push |
+| Reserve slots (manual) | User creates slots + confirm mapping | project.json | Auto commit+push |
 | Get started (wizard) | User answers questions | None (creates them) | Sets up git config |

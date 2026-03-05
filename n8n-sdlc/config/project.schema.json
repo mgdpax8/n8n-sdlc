@@ -127,6 +127,18 @@
       },
       "additionalProperties": false
     },
+    "slotCreator": {
+      "type": "object",
+      "description": "Optional config for automated slot creation via helper workflow. When configured, the reserve skill can auto-create empty workflow slots instead of requiring manual creation in the n8n UI.",
+      "properties": {
+        "webhookUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "Webhook URL of the slot-creator helper workflow deployed in your n8n instance."
+        }
+      },
+      "additionalProperties": false
+    },
     "createdAt": {
       "type": "string",
       "format": "date-time",
