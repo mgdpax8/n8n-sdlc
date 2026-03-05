@@ -47,6 +47,11 @@
         "lastModified": {
           "type": "string",
           "format": "date-time"
+        },
+        "seedOrder": {
+          "type": "array",
+          "description": "Bottom-up seeding order computed during import. Leaf tools first, then sub-agents, then top-level agents. Used by the seed skill to avoid recomputing the dependency graph.",
+          "items": { "type": "string" }
         }
       },
       "additionalProperties": false

@@ -239,6 +239,18 @@ Register external dependencies:
 }
 ```
 
+Save the bottom-up seeding order (computed in Step 4) to `metadata.seedOrder`:
+
+```json
+{
+  "metadata": {
+    "seedOrder": ["Get Totals", "List Invoices", "Ticket Lookup", "Billing Agent", "Support Agent"]
+  }
+}
+```
+
+This avoids recomputing the dependency graph when the seed skill runs later. The seed skill will read this array directly.
+
 ## Step 8: Save Workflow JSON Files Locally
 
 For each in-project workflow, save the fetched JSON to the assigned path:

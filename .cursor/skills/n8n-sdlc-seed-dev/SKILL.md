@@ -38,12 +38,22 @@ Accept workflow by:
 
 ### Step 2: Determine Seeding Order
 
-If seeding multiple workflows, calculate bottom-up order based on the dependency graph:
+If seeding multiple workflows, use the persisted order or compute it:
 
+**First, check `metadata.seedOrder` in id-mappings.json:**
+```
+If metadata.seedOrder exists and is a non-empty array:
+  1. Filter to only workflows being seeded (in case user specified a subset)
+  2. Preserve the stored order for matching workflows
+  3. Append any workflows not in seedOrder at the end (newly added since import)
+```
+
+**If seedOrder is missing or empty, compute bottom-up order:**
 ```
 1. Build dependency graph from id-mappings and workflow JSON
 2. Identify leaf nodes (workflows that don't call other in-project workflows)
 3. Process leaves first, then their parents, then grandparents, etc.
+4. Save the computed order to metadata.seedOrder for future runs
 
 Example order:
   1. Get Totals (tool, leaf)

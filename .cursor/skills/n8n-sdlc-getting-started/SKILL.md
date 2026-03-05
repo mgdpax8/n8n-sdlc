@@ -298,7 +298,8 @@ Field notes:
   "metadata": {
     "projectName": "",
     "createdAt": "{ISO timestamp}",
-    "lastModified": "{ISO timestamp}"
+    "lastModified": "{ISO timestamp}",
+    "seedOrder": []
   }
 }
 ```
