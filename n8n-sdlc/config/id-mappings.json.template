@@ -45,15 +45,6 @@
     }
   ],
 
-  "credentials": {
-    "$comment": "Map credential aliases to their environment-specific n8n IDs. Only needed for credentials that differ between dev/prod.",
-    
-    "$example_slack": {
-      "dev": "slack-sandbox-cred-id",
-      "prod": "slack-prod-cred-id"
-    }
-  },
-
   "metadata": {
     "projectName": "My Project",
     "createdAt": "2026-02-05T00:00:00.000Z",

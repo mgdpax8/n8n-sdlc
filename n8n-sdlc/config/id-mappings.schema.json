@@ -32,17 +32,6 @@
         "$ref": "#/definitions/reservedSlot"
       }
     },
-    "credentials": {
-      "type": "object",
-      "description": "Credential ID mappings between environments. Same structure as project.json credentials but tracked here for audit.",
-      "additionalProperties": {
-        "type": "object",
-        "properties": {
-          "dev": { "type": "string" },
-          "prod": { "type": "string" }
-        }
-      }
-    },
     "metadata": {
       "type": "object",
       "required": ["projectName", "createdAt", "lastModified"],

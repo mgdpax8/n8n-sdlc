@@ -293,7 +293,6 @@ Field notes:
   "workflows": {},
   "externalDependencies": {},
   "reservedSlots": [],
-  "credentials": {},
   "metadata": {
     "projectName": "",
     "createdAt": "{ISO timestamp}",
