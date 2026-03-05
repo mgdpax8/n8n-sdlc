@@ -37,11 +37,12 @@ See [Team Onboarding](n8n-sdlc/docs/Team-Onboarding.md) for all options includin
 
 ## Quick Start
 
-After installing, open the project in Cursor and:
+After installing, open the project in **Cursor** or **Claude Code**:
 
 1. **Run the setup wizard:**
    ```
-   Say: "Get started"
+   Cursor:      Say "Get started"
+   Claude Code: Type /n8n-get-started
    ```
    The wizard walks you through four questions:
    - **How are you starting?** (master workflow, project ID, or greenfield)
@@ -75,22 +76,22 @@ After installing, open the project in Cursor and:
 | [Pilot Guide](n8n-sdlc/docs/Pilot-Guide-BillingBot.md) | Walkthrough using a sample project |
 | [Team Onboarding](n8n-sdlc/docs/Team-Onboarding.md) | Setup guide for new team members |
 
-## Skills Reference
+## Commands Reference
 
-| Skill | Purpose |
-|-------|---------|
-| `n8n-sdlc-getting-started` | Setup wizard (single entry point) |
-| `n8n-sdlc-import-project` | Discover and register existing workflows |
-| `n8n-sdlc-reserve-workflows` | Reserve and claim workflow slots |
-| `n8n-sdlc-seed-dev` | Populate DEV from PROD with ID transformation |
-| `n8n-sdlc-pull-workflow` | Fetch workflow from n8n |
-| `n8n-sdlc-push-workflow` | Update workflow in n8n (with drift detection) |
-| `n8n-sdlc-promote-workflow` | Promote DEV to PROD with ID transformation |
-| `n8n-sdlc-validate-workflow` | Pre-flight validation checks |
-| `n8n-sdlc-rollback-workflow` | Rollback using n8n version history |
-| `n8n-sdlc-diff-workflow` | Compare local vs remote, detect drift |
-| `n8n-sdlc-git-sync` | Auto commit/push to project repo after operations |
-| `n8n-sdlc-project-status` | Dashboard of all workflow states |
+| Claude Code Command | Cursor Skill | Purpose |
+|--------------------|-------------|---------|
+| `/n8n-get-started` | `n8n-sdlc-getting-started` | Setup wizard (single entry point) |
+| `/n8n-import-project` | `n8n-sdlc-import-project` | Discover and register existing workflows |
+| `/n8n-reserve-workflows` | `n8n-sdlc-reserve-workflows` | Reserve and claim workflow slots |
+| `/n8n-seed-dev` | `n8n-sdlc-seed-dev` | Populate DEV from PROD with ID transformation |
+| `/n8n-pull-workflow` | `n8n-sdlc-pull-workflow` | Fetch workflow from n8n |
+| `/n8n-push-workflow` | `n8n-sdlc-push-workflow` | Update workflow in n8n (with drift detection) |
+| `/n8n-promote-workflow` | `n8n-sdlc-promote-workflow` | Promote DEV to PROD with ID transformation |
+| `/n8n-validate-workflow` | `n8n-sdlc-validate-workflow` | Pre-flight validation checks |
+| `/n8n-rollback-workflow` | `n8n-sdlc-rollback-workflow` | Rollback using n8n version history |
+| `/n8n-diff-workflow` | `n8n-sdlc-diff-workflow` | Compare local vs remote, detect drift |
+| `/n8n-git-sync` | `n8n-sdlc-git-sync` | Auto commit/push to project repo after operations |
+| `/n8n-project-status` | `n8n-sdlc-project-status` | Dashboard of all workflow states |
 
 ## Rules Reference
 
@@ -105,8 +106,11 @@ After installing, open the project in Cursor and:
 ```
 .
 ├── .cursor/
-│   ├── rules/              # SDLC rules and conventions
-│   └── skills/             # Automation skills
+│   ├── rules/              # SDLC rules and conventions (auto-loaded by Cursor)
+│   └── skills/             # Automation skills (single source of truth)
+├── .claude/
+│   └── commands/           # Claude Code slash commands (wrappers for skills)
+├── CLAUDE.md               # Claude Code entry point (rules + command index)
 ├── n8n-sdlc/
 │   ├── config/             # Project configuration
 │   │   ├── project.json    # Project settings
@@ -120,6 +124,8 @@ After installing, open the project in Cursor and:
 ```
 .
 ├── .cursor/
+├── .claude/
+├── CLAUDE.md
 ├── n8n-sdlc/
 │   ├── config/
 │   └── docs/
@@ -186,9 +192,9 @@ When promoting DEV → PROD (or seeding PROD → DEV), the system transforms:
 
 ## Getting Help
 
-- Check the skill files in `.cursor/skills/` for detailed instructions
-- Review rules in `.cursor/rules/` for conventions
-- Examine examples in `example/` for reference
+- **Cursor**: Check skill files in `.cursor/skills/` and rules in `.cursor/rules/`
+- **Claude Code**: Use `/n8n-*` slash commands or review `CLAUDE.md` for the rules and command index
+- Both IDEs share the same skill logic in `.cursor/skills/`
 
 ## Status
 

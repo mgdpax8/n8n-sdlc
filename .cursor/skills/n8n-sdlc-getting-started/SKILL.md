@@ -311,13 +311,18 @@ Based on `workflowsDir`:
 - If default: create `agents/` and `tools/` at workspace root
 - Always ensure `n8n-sdlc/config/` exists
 
-### Verify Rules Exist
+### Verify Rules and Commands Exist
 
 Check that `.cursor/rules/` contains:
 - `n8n-sdlc.md`
 - `n8n-sdlc-workflow-structure.md`
 
-If missing, warn the user.
+Check that `.claude/commands/` contains at least:
+- `n8n-get-started.md`
+
+If the `.cursor/rules/` files are missing, warn the user that Cursor rules are not installed.
+If the `.claude/commands/` files are missing, warn the user that Claude Code commands are not installed.
+Either set of missing files can be fixed by re-running `install.sh`.
 
 ## Routing
 

@@ -21,7 +21,7 @@ Before starting, you need:
 Both **Cursor** and **Claude Code** are supported:
 
 - **Cursor**: Rules and skills are auto-loaded from `.cursor/rules/` and `.cursor/skills/`. Skills appear as Cursor commands.
-- **Claude Code**: Reads `CLAUDE.md` at the project root for rules and skill index. Say a trigger phrase (e.g., "get started", "reserve workflows") and the AI will read the relevant SKILL.md before executing.
+- **Claude Code**: Reads `CLAUDE.md` at the project root for rules. Slash commands (`/n8n-get-started`, `/n8n-reserve-workflows`, etc.) are available from `.claude/commands/`. You can also say a trigger phrase (e.g., "get started", "reserve workflows") and the AI will read the relevant SKILL.md before executing.
 
 ## Step 1: Set Up Your Project Workspace
 
@@ -68,6 +68,8 @@ The install script only copies framework-owned files (skills prefixed with `n8n-
 Copy these directories into your project workspace by hand:
 - `.cursor/rules/n8n-sdlc.md` and `.cursor/rules/n8n-sdlc-workflow-structure.md`
 - `.cursor/skills/n8n-sdlc-*/` (all 12 skill folders)
+- `.claude/commands/n8n-*.md` (Claude Code slash commands)
+- `CLAUDE.md` (Claude Code entry point)
 - `n8n-sdlc/` (config templates, schemas, docs)
 - Append the entries from `.gitignore` to your project's `.gitignore`
 
@@ -75,13 +77,15 @@ Copy these directories into your project workspace by hand:
 
 If multiple people work on the same n8n project, create a dedicated repo for that project (using any of the paths above). **Commit `n8n-sdlc/config/project.json` and `n8n-sdlc/config/id-mappings.json`** to that repo (they are shared state for the team). Adjust `n8n-sdlc/.gitignore` accordingly.
 
-Open the project directory as your Cursor workspace. The `.cursor/rules/` and `.cursor/skills/` directories will be automatically detected.
+Open the project directory in Cursor or Claude Code. Cursor auto-detects `.cursor/rules/` and `.cursor/skills/`. Claude Code reads `CLAUDE.md` and `.claude/commands/`.
 
 ## Step 2: Install the n8n MCP Server
 
-The n8n MCP server allows Cursor's AI to interact with your n8n instance.
+The n8n MCP server allows Cursor or Claude Code to interact with your n8n instance.
 
-### Option A: Via Cursor MCP Settings
+### Cursor
+
+#### Option A: Via Cursor MCP Settings
 
 1. Open Cursor Settings
 2. Navigate to MCP Servers
@@ -93,7 +97,7 @@ The n8n MCP server allows Cursor's AI to interact with your n8n instance.
      - `N8N_API_URL`: Your n8n instance URL (e.g., `https://n8n.tech.pax8.com`)
      - `N8N_API_KEY`: Your personal n8n API key
 
-### Option B: Via Config File
+#### Option B: Via Config File
 
 Add to your Cursor MCP config (typically `~/.cursor/mcp.json` or similar):
 
@@ -112,6 +116,46 @@ Add to your Cursor MCP config (typically `~/.cursor/mcp.json` or similar):
 }
 ```
 
+### Claude Code
+
+#### Option A: Via CLI
+
+```bash
+claude mcp add n8n-mcp -- npx -y n8n-mcp
+```
+
+Then set the environment variables in `.claude/settings.local.json`:
+
+```json
+{
+  "env": {
+    "N8N_API_URL": "https://n8n.tech.pax8.com",
+    "N8N_API_KEY": "your-api-key-here"
+  }
+}
+```
+
+#### Option B: Via Config File
+
+Add to your project's `.mcp.json` (at the workspace root):
+
+```json
+{
+  "mcpServers": {
+    "n8n-mcp": {
+      "command": "npx",
+      "args": ["-y", "n8n-mcp"],
+      "env": {
+        "N8N_API_URL": "https://n8n.tech.pax8.com",
+        "N8N_API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+> **Note:** `.mcp.json` is project-scoped. Add it to `.gitignore` if it contains secrets, or use environment variables.
+
 ### Getting Your n8n API Key
 
 1. Log in to your n8n instance
@@ -123,7 +167,7 @@ Add to your Cursor MCP config (typically `~/.cursor/mcp.json` or similar):
 
 ## Step 3: Verify MCP Connection
 
-In Cursor, ask the AI:
+In your IDE, ask the AI:
 
 ```
 Run an n8n health check
@@ -171,8 +215,11 @@ Workflow JSON files live in folders specified by `localPath` in `n8n-sdlc/config
 ```
 project/
 ├── .cursor/
-│   ├── rules/              # AI behavior rules (always active)
-│   └── skills/             # AI automation skills (invoked on demand)
+│   ├── rules/              # AI behavior rules (always active in Cursor)
+│   └── skills/             # AI automation skills (single source of truth)
+├── .claude/
+│   └── commands/           # Claude Code slash commands (wrappers for skills)
+├── CLAUDE.md               # Claude Code entry point (rules + command index)
 ├── n8n-sdlc/
 │   ├── config/
 │   │   ├── project.json    # Project settings
@@ -298,7 +345,7 @@ The SDLC automatically commits and pushes to your **project repo** (not the SDLC
 
 1. Verify your API key is correct: `n8n_health_check` should succeed
 2. Check that `N8N_API_URL` points to the correct instance
-3. Restart Cursor after changing MCP configuration
+3. Restart your IDE after changing MCP configuration
 4. Verify `npx` can run: `npx -y n8n-mcp --version`
 
 ### Can't see workflows
