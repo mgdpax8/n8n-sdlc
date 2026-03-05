@@ -1,0 +1,147 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+  delete:
+
+jobs:
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run ShellCheck on install.sh
+        uses: ludeeus/action-shellcheck@2.0.0
+        with:
+          scandir: .
+          additional_files: install.sh
+
+  markdown-lint:
+    name: Markdown Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run markdownlint
+        uses: DavidAnson/markdownlint-cli2-action@v19
+        with:
+          globs: "**/*.md"
+
+  json-schema-validation:
+    name: JSON Schema Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install ajv-cli
+        run: npm install -g ajv-cli ajv-formats
+      - name: Validate schema files are valid JSON Schema
+        run: |
+          ajv compile -s n8n-sdlc/config/id-mappings.schema.json -c ajv-formats --spec=draft7
+          ajv compile -s n8n-sdlc/config/project.schema.json -c ajv-formats --spec=draft7
+      - name: Validate templates are valid JSON
+        run: |
+          jq empty n8n-sdlc/config/id-mappings.json.template
+          jq empty n8n-sdlc/config/project.json.template
+      - name: Validate config files against schemas (if present)
+        run: |
+          if [ -f n8n-sdlc/config/id-mappings.json ]; then
+            echo "Validating id-mappings.json"
+            ajv validate \
+              -s n8n-sdlc/config/id-mappings.schema.json \
+              -d n8n-sdlc/config/id-mappings.json \
+              -c ajv-formats \
+              --spec=draft7
+          fi
+          if [ -f n8n-sdlc/config/project.json ]; then
+            echo "Validating project.json"
+            ajv validate \
+              -s n8n-sdlc/config/project.schema.json \
+              -d n8n-sdlc/config/project.json \
+              -c ajv-formats \
+              --spec=draft7
+          fi
+          echo "Schema validation complete"
+
+  n8n-workflow-validation:
+    name: n8n Workflow JSON Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate n8n workflow JSON files
+        run: |
+          exit_code=0
+          shopt -s globstar nullglob
+
+          workflow_files=(workflows/**/*.json)
+
+          if [ ${#workflow_files[@]} -eq 0 ]; then
+            echo "No workflow JSON files found in workflows/ — skipping"
+            exit 0
+          fi
+
+          for file in "${workflow_files[@]}"; do
+            echo "--- Checking $file ---"
+
+            # Must be valid JSON
+            if ! jq empty "$file" 2>/dev/null; then
+              echo "FAIL: $file is not valid JSON"
+              exit_code=1
+              continue
+            fi
+
+            # Must have a "name" field (string)
+            name=$(jq -r '.name // empty' "$file")
+            if [ -z "$name" ]; then
+              echo "FAIL: $file missing required 'name' field"
+              exit_code=1
+            fi
+
+            # Must have a "nodes" array
+            if ! jq -e '.nodes | type == "array"' "$file" >/dev/null 2>&1; then
+              echo "FAIL: $file missing or invalid 'nodes' array"
+              exit_code=1
+            fi
+
+            # Must have a "connections" object
+            if ! jq -e '.connections | type == "object"' "$file" >/dev/null 2>&1; then
+              echo "FAIL: $file missing or invalid 'connections' object"
+              exit_code=1
+            fi
+
+            # Each node must have id, name, type
+            bad_nodes=$(jq '[.nodes[] | select(.id == null or .name == null or .type == null)] | length' "$file")
+            if [ "$bad_nodes" -gt 0 ]; then
+              echo "FAIL: $file has $bad_nodes node(s) missing id, name, or type"
+              exit_code=1
+            fi
+
+            if [ $exit_code -eq 0 ]; then
+              echo "OK: $file"
+            fi
+          done
+
+          exit $exit_code
+
+  branch-policy:
+    name: Branch Policy
+    runs-on: ubuntu-latest
+    if: github.event_name == 'delete' || github.event_name == 'pull_request'
+    steps:
+      - name: Prevent dev branch deletion
+        if: github.event_name == 'delete' && github.event.ref == 'dev' && github.event.ref_type == 'branch'
+        run: |
+          echo "::error::The dev branch must never be deleted."
+          exit 1
+      - name: Enforce feature branches target dev
+        if: github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main'
+        run: |
+          HEAD="${{ github.event.pull_request.head.ref }}"
+          if [[ "$HEAD" != "dev" ]]; then
+            echo "::error::Only the dev branch can merge into main. Branch '$HEAD' should target dev instead."
+            exit 1
+          fi
