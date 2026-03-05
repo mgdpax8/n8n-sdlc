@@ -253,37 +253,64 @@ Examples:
   tools/Support Agent/Ticket Lookup.json  (if grouped strategy)
 ```
 
-## Step 9: Prompt for DEV Slot Creation
+## Step 9: Create DEV Slots
 
-Tell the user how many DEV slots are needed:
+After registering all workflows as PROD, check `n8n-sdlc/config/project.json` for `slotCreator.webhookUrl`.
+
+### If Slot Creator is configured:
+
+Offer to auto-create DEV slots immediately:
 
 ```
-NEXT STEPS: DEV Slot Creation
+NEXT STEP: DEV Slot Creation
+===========================================================
+
+You have {N} production workflows registered. I can auto-create
+{N} DEV slots using the Slot Creator.
+
+Shall I create and claim {N} DEV slots now? (yes/no)
+
+DEV workflows to create:
+  - DEV-Support Agent
+  - DEV-Billing Agent
+  - DEV-List Invoices
+  - DEV-Ticket Lookup
+  - DEV-Get Totals
+```
+
+If the user says **yes**: invoke the reserve skill logic directly in handoff mode. The reserve skill will read `id-mappings.json` for all `dev.status: "needs-slot"` entries and use the Slot Creator webhook to create and claim them.
+
+If the user says **no** or **later**: show the manual instructions below and let the user run "reserve workflows" when ready.
+
+### If Slot Creator is NOT configured:
+
+Show manual instructions:
+
+```
+NEXT STEP: DEV Slot Creation
 ===========================================================
 
 You have {N} production workflows registered. To enable the
 DEV/PROD workflow, you need {N} empty DEV slots.
 
-Please go to n8n and create {N} empty workflows in your
-project folder.
+Say "reserve workflows" and I'll walk you through creating
+and claiming them.
 
-Name suggestions (or use any names -- they'll be renamed):
-  1. DEV slot 1
-  2. DEV slot 2
-  ...
-
-When done, say "reserve workflows" and I'll claim the slots
-and rename them to your DEV workflow names:
+DEV workflows needed:
   - DEV-Support Agent
   - DEV-Billing Agent
   - DEV-List Invoices
   - DEV-Ticket Lookup
   - DEV-Get Totals
 
-After reserving, use the "seed dev" skill to populate each DEV
-workflow from its PROD version (with ID transformation).
+TIP: Set up the Slot Creator helper workflow to automate this
+step. See n8n-sdlc/helpers/README.md for instructions.
+```
 
-RECOMMENDED ORDER (bottom-up):
+### In both cases, include the recommended seeding order:
+
+```
+RECOMMENDED SEEDING ORDER (bottom-up):
   1. Get Totals, List Invoices, Ticket Lookup (leaf tools)
   2. Billing Agent (sub-agent)
   3. Support Agent (top-level agent)

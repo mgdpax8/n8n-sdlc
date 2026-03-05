@@ -10,11 +10,18 @@ This repository is the **SDLC framework** -- a portable toolkit of rules, skills
 
 Before starting, you need:
 
-1. **Cursor IDE** installed
+1. **Cursor IDE or Claude Code** (either works — see AI Tool Support below)
 2. **Access to your n8n instance** (e.g., https://n8n.tech.pax8.com)
 3. **n8n user account** with access to the project(s) you'll be developing
 4. **Git access** to the SDLC repository
 5. **n8n API key** for MCP authentication
+
+### AI Tool Support
+
+Both **Cursor** and **Claude Code** are supported:
+
+- **Cursor**: Rules and skills are auto-loaded from `.cursor/rules/` and `.cursor/skills/`. Skills appear as Cursor commands.
+- **Claude Code**: Reads `CLAUDE.md` at the project root for rules and skill index. Say a trigger phrase (e.g., "get started", "reserve workflows") and the AI will read the relevant SKILL.md before executing.
 
 ## Step 1: Set Up Your Project Workspace
 
@@ -124,6 +131,38 @@ Run an n8n health check
 
 You should see a successful connection to your n8n instance with version info and available tools.
 
+## Step 3b: Set Up the Slot Creator (Optional)
+
+The Slot Creator is a helper n8n workflow that automates the creation of empty workflow slots. Without it, you must manually create empty workflows in the n8n UI before the reserve step can claim them. With it, the AI agent creates and transfers them automatically.
+
+### Setup
+
+1. Import the workflow file `n8n-sdlc/helpers/slot-creator-workflow.json` into your n8n project
+2. Open the imported "SDLC Slot Creator" workflow
+3. Toggle it to **Active**
+4. Click the Webhook node ("Receive Request") and copy the **Production** webhook URL
+5. Add the URL to `n8n-sdlc/config/project.json`:
+   ```json
+   "slotCreator": {
+     "webhookUrl": "https://your-n8n.example.com/webhook/sdlc/create-slots"
+   }
+   ```
+
+### Requirements
+
+- **n8n 1.30+** (requires `fetch` in Code nodes)
+- **n8n REST API enabled** with a valid API key
+- **Project transfer support** (Enterprise or Community Edition with projects)
+
+### Troubleshooting
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| `Create failed (HTTP 401)` | Invalid API key | Verify API key is correct and active |
+| `Transfer failed (HTTP 404)` | Transfer endpoint unavailable | Check n8n version supports project transfers |
+| `Transfer failed (HTTP 400)` | Invalid project ID | Verify `n8nProjectId` matches your project |
+| `fetch is not defined` | n8n version too old | Upgrade to n8n 1.30+ |
+
 ## Step 4: Understand the Project Structure
 
 Workflow JSON files live in folders specified by `localPath` in `n8n-sdlc/config/id-mappings.json` (per workflow). Two layouts are supported:
@@ -184,9 +223,10 @@ This will list all workflows and their current state. Verify you can see the wor
 
 ### Reserve and Claim Pattern
 
-The MCP **cannot** create workflows in the correct n8n folder. All new workflows must be:
-1. Created manually by a human in the n8n UI (in the correct project folder)
-2. "Claimed" via the SDLC system to register their IDs
+The MCP **cannot** create workflows in the correct n8n project folder. Two paths are available:
+
+- **Automated (Slot Creator)**: If the Slot Creator helper workflow is configured (see Step 3b), the AI agent creates empty slots via webhook and claims them automatically. No manual steps required.
+- **Manual**: Create empty workflows by hand in the n8n UI (in the correct project folder), then say "reserve workflows" so the SDLC system can claim and register their IDs.
 
 ### Naming Convention
 

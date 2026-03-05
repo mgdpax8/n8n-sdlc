@@ -1,0 +1,73 @@
+{
+  "name": "SDLC Slot Creator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sdlc/create-slots",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [220, 340],
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Receive Request",
+      "webhookId": "d4e5f6a7-b8c9-0123-defa-234567890123"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// SDLC Slot Creator\n// Bulk-creates empty workflows and transfers them to a project folder.\n//\n// Required body fields:\n//   projectId  — n8n project ID (destination folder)\n//   count      — number of slots to create (1\u201350)\n//   baseUrl    — n8n instance URL (e.g. \"https://n8n.example.com\")\n//   apiKey     — n8n REST API key\n//\n// Optional:\n//   names      — array of workflow names (defaults to \"Slot 1\", \"Slot 2\", ...)\n\nconst input = $input.first().json;\n\nconst projectId = input.projectId;\nconst count = parseInt(input.count, 10);\nconst names = input.names || [];\nconst baseUrl = (input.baseUrl || '').replace(/\\/$/, '');\nconst apiKey = input.apiKey;\n\n// --- Validation ---\nconst missing = [];\nif (!projectId) missing.push('projectId');\nif (!baseUrl) missing.push('baseUrl');\nif (!apiKey) missing.push('apiKey');\n\nif (missing.length > 0) {\n  return [{ json: { success: false, error: `Missing required fields: ${missing.join(', ')}` } }];\n}\nif (isNaN(count) || count < 1 || count > 50) {\n  return [{ json: { success: false, error: 'count must be a number between 1 and 50' } }];\n}\n\n// --- Create and transfer each slot ---\nconst headers = {\n  'X-N8N-API-KEY': apiKey,\n  'Content-Type': 'application/json',\n};\n\nconst created = [];\nconst errors = [];\n\nfor (let i = 0; i < count; i++) {\n  const name = names[i] || `Slot ${i + 1}`;\n\n  try {\n    // 1. Create empty workflow (lands in Personal folder)\n    const createResp = await fetch(`${baseUrl}/api/v1/workflows`, {\n      method: 'POST',\n      headers,\n      body: JSON.stringify({\n        name,\n        nodes: [],\n        connections: {},\n        settings: { executionOrder: 'v1' },\n      }),\n    });\n\n    if (!createResp.ok) {\n      const errText = await createResp.text();\n      throw new Error(`Create failed (HTTP ${createResp.status}): ${errText}`);\n    }\n\n    const workflow = await createResp.json();\n\n    // 2. Transfer to target project folder\n    const transferResp = await fetch(\n      `${baseUrl}/api/v1/workflows/${workflow.id}/transfer`,\n      {\n        method: 'PUT',\n        headers,\n        body: JSON.stringify({ destinationProjectId: projectId }),\n      }\n    );\n\n    if (!transferResp.ok) {\n      const errText = await transferResp.text();\n      throw new Error(`Transfer failed (HTTP ${transferResp.status}): ${errText}`);\n    }\n\n    created.push({ id: workflow.id, name });\n  } catch (err) {\n    errors.push({ index: i, name, error: err.message });\n  }\n}\n\nreturn [{\n  json: {\n    success: errors.length === 0,\n    created,\n    count: created.length,\n    requested: count,\n    errors,\n  },\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 340],
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "name": "Create Slots"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [740, 340],
+      "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "name": "Send Response"
+    }
+  ],
+  "connections": {
+    "Receive Request": {
+      "main": [
+        [
+          {
+            "node": "Create Slots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Slots": {
+      "main": [
+        [
+          {
+            "node": "Send Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}
