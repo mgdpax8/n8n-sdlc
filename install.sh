@@ -136,7 +136,7 @@ install_skills() {
 
     log_info "Skills (.cursor/skills/${SDLC_SKILL_PREFIX}*/)"
 
-    for skill_dir in "$src_skills"/${SDLC_SKILL_PREFIX}*/; do
+    for skill_dir in "${src_skills}/${SDLC_SKILL_PREFIX}"*/; do
         [[ -d "$skill_dir" ]] || continue
         local skill_name
         skill_name="$(basename "$skill_dir")"
@@ -170,7 +170,7 @@ install_claude_commands() {
         return
     fi
 
-    for cmd_file in "$src_commands"/${SDLC_COMMAND_PREFIX}*.md; do
+    for cmd_file in "${src_commands}/${SDLC_COMMAND_PREFIX}"*.md; do
         [[ -f "$cmd_file" ]] || continue
         local cmd_name
         cmd_name="$(basename "$cmd_file")"

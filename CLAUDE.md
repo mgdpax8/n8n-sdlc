@@ -18,6 +18,7 @@ Read `.cursor/rules/n8n-sdlc.md` for the full rules reference. Key points below.
 ### MCP Folder Constraint
 
 The n8n MCP server (and REST API) creates workflows in "Personal", not project folders. NEVER use `n8n_create_workflow`. Use the Reserve and Claim pattern:
+
 1. Create empty slots in the project folder (automated via Slot Creator or manual)
 2. Claim slots by recording IDs in `n8n-sdlc/config/id-mappings.json`
 3. Update workflows via MCP with actual content
