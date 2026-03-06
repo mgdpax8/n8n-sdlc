@@ -83,7 +83,7 @@
     },
     "credentials": {
       "type": "object",
-      "description": "Map credential aliases to their environment-specific n8n IDs. Only for credentials that differ between dev and prod. During promotion, iterate aliases and replace any node credential whose ID matches the 'dev' value with the 'prod' value.",
+      "description": "Map credential aliases to their environment-specific n8n IDs. Only for credentials that differ between dev and prod. During promotion, iterate aliases and replace any node credential whose ID matches the 'dev' value with the 'prod' value. Security note: these are opaque n8n-internal reference IDs, not secrets. Actual credential secrets (API keys, tokens, passwords) are stored in n8n's encrypted credential vault and are never exposed here. project.json is gitignored by default.",
       "additionalProperties": {
         "type": "object",
         "required": ["dev", "prod"],
