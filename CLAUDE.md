@@ -67,6 +67,7 @@ Each command reads the corresponding SKILL.md before executing. In Claude Code, 
 | `/n8n-git-sync` | `n8n-sdlc-git-sync` | Called automatically by other commands |
 | `/n8n-diff-workflow` | `n8n-sdlc-diff-workflow` | "diff workflow", "compare dev prod" |
 | `/n8n-rollback-workflow` | `n8n-sdlc-rollback-workflow` | "rollback", "revert workflow" |
+| `/n8n-doctor` | `n8n-sdlc-doctor` | "doctor", "diagnose", "health check" |
 
 ## Key Files
 
@@ -77,6 +78,14 @@ Each command reads the corresponding SKILL.md before executing. In Claude Code, 
 | `.cursor/rules/n8n-sdlc.md` | Full rules and conventions reference |
 | `.cursor/rules/n8n-sdlc-workflow-structure.md` | JSON transformation reference for promote/seed |
 | `n8n-sdlc/helpers/slot-creator-workflow.json` | Helper workflow for automated slot creation |
+
+## GitHub Issue Linking
+
+When working on a branch that addresses a GitHub issue:
+
+- Include `Closes #<number>` or `Fixes #<number>` in the PR body so the issue auto-closes on merge
+- If a PR only partially addresses an issue, use `Relates to #<number>` instead
+- Always reference the issue number in the PR description
 
 ## Typical Workflows
 
