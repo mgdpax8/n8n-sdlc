@@ -279,6 +279,12 @@ For `localPath`:
 
 Read `folderStrategy` from `n8n-sdlc/config/project.json`.
 
+## Step 5.5: Clean Up reservedSlots
+
+After claiming, remove stale entries from `reservedSlots` in `id-mappings.json`. For each entry in `reservedSlots`, check if its `id` now appears as any workflow's `dev.id` or `prod.id`. If it does, remove the entry — it has been claimed and is no longer a reserved slot.
+
+If all entries were claimed, set `reservedSlots` to an empty array `[]`.
+
 ## Step 6: Rename Workflows in n8n
 
 Use MCP to update workflow names:
