@@ -83,8 +83,9 @@ Each command reads the corresponding SKILL.md before executing. In Claude Code, 
 **New project with existing workflows:**
 Get Started -> Import Project -> Reserve Workflows -> Seed DEV
 
-**Greenfield project:**
-Get Started -> Reserve Workflows -> Build in DEV -> Promote to PROD
+**Greenfield project (no existing workflows):**
+Get Started -> Reserve Workflows (DEV + PROD slots) -> Build in DEV -> Promote to PROD.
+Greenfield reserves both DEV and PROD slots (count x 2). Build bottom-up: leaf tools first, then agents. The first promote is the initial production deployment.
 
 **Day-to-day development:**
 Pull -> Edit locally -> Push to DEV -> Test -> Promote to PROD
