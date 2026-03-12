@@ -27,7 +27,7 @@
     "webhookUrl": ""
   },
   "credentials": {
-    "$comment": "Map credentials that differ between dev and prod. Format: alias -> {dev: id, prod: id}",
+    "$comment": "Map credentials that differ between dev and prod. Format: alias -> {dev: id, prod: id}. These are opaque n8n reference IDs, not secrets. Actual secrets live in n8n's encrypted credential vault.",
     "$example_slack": {
       "dev": "slack-sandbox-credential-id",
       "prod": "slack-production-credential-id"

@@ -371,13 +371,37 @@ Immediately proceed to the **n8n-sdlc-import-project** skill. It will read `disc
 
 **Option 3 (greenfield):**
 
-```
-Setup complete!
+```text
+Setup complete! Here's how to build your first workflows.
 
-Next steps:
-1. Create empty workflows in n8n in your project folder
-2. Say "reserve workflows" to claim the empty slots
-3. Build in DEV, then promote to PROD when ready
+PLAN YOUR WORKFLOWS
+  Decide what you're building and classify each workflow:
+  - "agent" — top-level AI agent workflows
+  - "tool"  — sub-workflows called by agents (tool/execute nodes)
+  Give each workflow a production name (e.g., "Support Agent", "List Invoices").
+
+RESERVE SLOTS
+  Say "reserve workflows" and list your workflow names.
+  For each one, choose "Both DEV and PROD slots" (greenfield needs both).
+  The reserve skill will create {count × 2} empty slots in n8n and
+  record the DEV and PROD IDs in id-mappings.json.
+
+BUILD IN DEV
+  1. Build your workflow locally or in the n8n editor using the DEV slot
+  2. Use "push {DEV-WorkflowName}" to sync local changes to n8n
+  3. Test and iterate in the DEV environment
+
+PROMOTE TO PROD
+  When a workflow is ready for production:
+  1. Say "promote {WorkflowName}"
+  2. The promote skill transforms DEV → PROD (strips prefix, swaps IDs)
+  3. The PROD slot goes from "reserved" to "active"
+  4. This is the initial production deployment — subsequent promotes
+     will back up the existing PROD state first
+
+BUILD ORDER TIP
+  Build bottom-up: start with leaf tool workflows, then parent agents.
+  This ensures sub-workflow references resolve correctly during promotion.
 ```
 
 ## Error Handling

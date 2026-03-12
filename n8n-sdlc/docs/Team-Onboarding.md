@@ -384,7 +384,23 @@ The SDLC automatically commits and pushes to your **project repo** (not the SDLC
 
 ## Security Notes
 
-- **API keys** are personal and should never be shared or committed
-- **Credential IDs** in `project.json` and `id-mappings.json` are n8n internal IDs, not secrets
-- **Workflow JSON** may contain credential references (IDs only, not actual secrets)
-- If you need to store actual secrets, use `n8n-sdlc/config/secrets.json` (gitignored)
+### API Keys
+
+Your n8n API key is personal and should never be shared or committed to git. Store it only in your local MCP configuration (Cursor settings or `.claude/settings.local.json`).
+
+### Credential IDs Are Not Secrets
+
+The `credentials` section in `project.json` contains **opaque n8n-internal reference IDs** (e.g., `UyMc4dkYbAN56KA5`), not actual secrets. These IDs are used during promote and seed operations to swap credential references between dev and prod environments. Actual credential secrets (API keys, tokens, passwords) are stored in n8n's encrypted credential vault and are never exposed in this framework.
+
+`project.json` is **gitignored by default** (`n8n-sdlc/.gitignore`), so credential IDs are not committed to version control. Do not remove this gitignore entry. For shared team repos where `project.json` is intentionally committed, the credential IDs are safe to share since they carry no authentication value outside of the n8n instance.
+
+### What Is and Is Not Committed
+
+| File | Committed | Contains |
+|------|-----------|----------|
+| `project.json` | No (gitignored) | Credential reference IDs, project config |
+| `project.json.template` | Yes | Example placeholders only |
+| `id-mappings.json` | No (gitignored) | Workflow ID pairs |
+| `secrets.json` | No (gitignored) | Reserved for future use |
+| Workflow JSON files | Yes | Credential type and ID references (not secrets) |
+| MCP config | No (local) | API keys (never commit) |
