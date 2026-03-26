@@ -363,8 +363,14 @@ After config is created (or if it already existed), route based on the setup pat
 
 **Option 1 (master workflow) or Option 2 (full project):**
 
-```
+```text
 Setup complete! Now running workflow discovery...
+
+The import process will:
+- Discover all workflows and build a dependency graph
+- Generate an architecture diagram (Mermaid)
+- Generate a project README with workflow inventory and dev instructions
+- Register all workflows for SDLC management
 ```
 
 Immediately proceed to the **n8n-sdlc-import-project** skill. It will read `discoveryMode` and `masterWorkflowId` from config -- no additional questions needed.

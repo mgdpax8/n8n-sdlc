@@ -356,7 +356,126 @@ Create the `n8n-sdlc/diagrams/` directory if it does not exist.
 - **Circular references**: Render as-is — Mermaid handles cycles gracefully
 - **Re-import**: Overwrite the existing diagram file with the latest graph
 
-## Step 10: Create DEV Slots
+## Step 10: Generate Project README
+
+After generating the diagram, create a project-focused `README.md` at the workspace root. This README describes the user's n8n project -- not the SDLC framework. All the data needed is already available from discovery (Steps 2-4) and the diagram (Step 9).
+
+### Ask for a project description
+
+```text
+I'd like to generate a README for your project repository.
+
+Can you give me a one-line description of what this project does?
+(e.g., "AI agent that handles tech support requests in Slack")
+
+Or type "skip" to use a generic description.
+```
+
+If the user skips, use: `n8n workflow project managed with n8n-sdlc.`
+
+### README structure
+
+Generate `README.md` at the workspace root with these sections. Use data already collected during import -- no additional MCP calls needed.
+
+**Line 1 -- marker comment:** `<!-- n8n-sdlc:readme -->` (allows re-import to detect and replace).
+
+**Section 1 -- Header:**
+
+```text
+# {projectName or logical name of top-level agent}
+
+{User-provided description or generic fallback}
+
+- **n8n Project ID:** `{n8nProjectId}`
+- **Entry point:** {top-level workflow name(s) -- 0-parent workflows from Step 4}
+- **Managed with:** [n8n-sdlc](https://github.com/mgdpax8/n8n-sdlc) v{version from n8n-sdlc/VERSION}
+```
+
+**Section 2 -- Architecture (embedded Mermaid diagram):**
+
+Copy the same `graph TD` block generated in Step 9 directly into the README inside a mermaid code fence. Include the legend line beneath it.
+
+**Section 3 -- Workflows table:**
+
+```text
+| Workflow | Type | Role | PROD ID |
+|----------|------|------|---------|
+| {name} | {agent/tool} | {top-level/sub-agent/shared tool/dedicated tool} | `{prod.id}` |
+```
+
+One row per workflow from id-mappings.workflows.
+
+**Section 4 -- External Dependencies (omit if none):**
+
+```text
+| Workflow | ID | Referenced By |
+|----------|-----|---------------|
+| {name} | `{id}` | {referencedBy joined with ", "} |
+```
+
+**Section 5 -- Integrations (best-effort, omit if none detected):**
+
+Scan the discovered workflow nodes for recognizable integration patterns:
+
+- Node types containing service names (slack, servicenow, jira, github, etc.)
+- Credential type names (often indicate the service)
+- HTTP Request nodes with URLs containing known service domains
+
+```text
+| Service | Used By | How |
+|---------|---------|-----|
+| {service} | {workflow names} | {node type or brief description} |
+```
+
+If no recognizable integrations are detected, omit this section entirely.
+
+**Section 6 -- Development quick reference:**
+
+```text
+## Development
+
+This project uses [n8n-sdlc](https://github.com/mgdpax8/n8n-sdlc) for dev/prod workflow management.
+
+### Quick reference
+
+| Action | Command |
+|--------|---------|
+| Pull latest from n8n | `n8n-pull-workflow {name}` |
+| Push changes to DEV | `n8n-push-workflow {name}` |
+| Promote to PROD | `n8n-promote-workflow {name}` |
+| Check project health | `n8n-doctor` |
+| View status dashboard | `n8n-project-status` |
+
+### Branch model
+
+| Branch | Purpose |
+|--------|---------|
+| `{git.devBranch}` | Active development |
+| `{git.mainBranch}` | Mirrors production |
+
+See `n8n-sdlc/docs/` for full SDLC documentation.
+```
+
+### Handling existing README
+
+- **No `README.md` exists:** Create it.
+- **`README.md` exists and starts with `<!-- n8n-sdlc:readme -->`:** Replace it (re-import).
+- **`README.md` exists without the marker:** Ask before overwriting:
+
+  ```text
+  A README.md already exists. Would you like me to:
+  1. Replace it with the generated project README
+  2. Keep the existing README (skip generation)
+  ```
+
+### Notes
+
+- The `<!-- n8n-sdlc:readme -->` marker on line 1 allows re-import to detect and replace it automatically.
+- The Mermaid diagram is embedded directly -- the separate `workflow-connections.md` is still generated for standalone use.
+- The Integrations section is best-effort. Omit rather than show an empty table.
+- The README should answer three questions for someone seeing the repo for the first time: "what is this?", "what does it contain?", and "how do I work on it?"
+
+## Step 11: Create DEV Slots
 
 After registering all workflows as PROD, check `n8n-sdlc/config/project.json` for `slotCreator.webhookUrl`.
 
@@ -422,11 +541,11 @@ Seeding bottom-up ensures DEV tool references are available
 when seeding the agents that call them.
 ```
 
-## Step 11: Git Sync
+## Step 12: Git Sync
 
 After saving all workflow files and the diagram, run the **n8n-sdlc-git-sync** skill with:
 
-- Files: all saved workflow JSONs, `n8n-sdlc/config/id-mappings.json`, `n8n-sdlc/config/project.json`, `n8n-sdlc/diagrams/workflow-connections.md`
+- Files: all saved workflow JSONs, `n8n-sdlc/config/id-mappings.json`, `n8n-sdlc/config/project.json`, `n8n-sdlc/diagrams/workflow-connections.md`, `README.md`
 - Message: `[import] Initial import: {N} workflows discovered`
 - Example: `[import] Initial import: 5 workflows discovered`
 

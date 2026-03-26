@@ -187,9 +187,29 @@ TRANSFORMATIONS:
    +---------------------+-----------------+-----------------+
 ```
 
-### Step 7: Request Confirmation
+### Step 7: Pre-Promotion Testing Gate
 
+Before requesting deployment confirmation, verify the user has tested the workflow:
+
+```text
+PRE-PROMOTION CHECKLIST
+
+Before promoting to PROD, confirm you have completed testing:
+
+  1. Tested the DEV workflow end-to-end in n8n
+  2. Verified all tool/sub-workflow integrations work correctly
+  3. Checked error handling and edge cases
+
+Have you completed testing in DEV? (yes/no)
 ```
+
+**If "no" or unclear:** Do not proceed. Advise the user to test first and come back when ready.
+
+**If "yes":** Continue to confirmation.
+
+### Step 8: Request Confirmation
+
+```text
 PRODUCTION DEPLOYMENT
 
 You are about to deploy to PRODUCTION.
@@ -204,7 +224,7 @@ Type "confirm" to proceed, or anything else to cancel.
 
 **Wait for explicit "confirm" response.**
 
-### Step 8: Backup Current PROD
+### Step 9: Backup Current PROD
 
 ```
 1. Pull current PROD workflow from n8n
@@ -213,7 +233,7 @@ Type "confirm" to proceed, or anything else to cancel.
 3. Log backup location
 ```
 
-### Step 9: Perform Transformations
+### Step 10: Perform Transformations
 
 Execute the transformation algorithm:
 
@@ -275,7 +295,7 @@ for (node of prodWorkflow.nodes) {
 prodWorkflow.tags = updateTagsForProd(prodWorkflow.tags)
 ```
 
-### Step 10: Push to PROD via MCP
+### Step 11: Push to PROD via MCP
 
 ```
 MCP Tool: n8n_update_full_workflow
@@ -291,7 +311,7 @@ If this is a first-time promotion (PROD slot was inactive), the workflow will be
 saved but NOT published. User must manually activate/publish in n8n UI.
 ```
 
-### Step 11: Verify Promotion Success
+### Step 12: Verify Promotion Success
 
 ```
 1. Check MCP response for errors
@@ -300,7 +320,7 @@ saved but NOT published. User must manually activate/publish in n8n UI.
 4. Compare expected vs actual
 ```
 
-### Step 12: Post-Promotion Validation
+### Step 13: Post-Promotion Validation
 
 Run n8n's built-in validation on the promoted PROD workflow:
 
@@ -338,7 +358,7 @@ The workflow was pushed but may have issues. Review the errors above.
 Consider rolling back if critical errors are present.
 ```
 
-### Step 13: Update Audit Trail
+### Step 14: Update Audit Trail
 
 Update `n8n-sdlc/config/id-mappings.json`:
 
@@ -360,7 +380,7 @@ Update `n8n-sdlc/config/id-mappings.json`:
 }
 ```
 
-### Step 14: Check Activation State
+### Step 15: Check Activation State
 
 After pushing, check whether the PROD workflow was active or inactive:
 
@@ -379,7 +399,7 @@ The content has been saved but is NOT live yet.
 To make it live, you must activate/publish it manually in the n8n UI.
 ```
 
-### Step 15: Confirm Completion
+### Step 16: Confirm Completion
 
 ```
 PROMOTION SUCCESSFUL
@@ -446,7 +466,7 @@ If promotion causes issues:
 3. Verify PROD is restored
 ```
 
-### Step 16: Git Sync and PR Offer
+### Step 17: Git Sync and PR Offer
 
 Run the **n8n-sdlc-git-sync** skill with:
 
