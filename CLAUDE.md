@@ -78,6 +78,7 @@ Each command reads the corresponding SKILL.md before executing. In Claude Code, 
 | `.cursor/rules/n8n-sdlc.md` | Full rules and conventions reference |
 | `.cursor/rules/n8n-sdlc-workflow-structure.md` | JSON transformation reference for promote/seed |
 | `n8n-sdlc/helpers/slot-creator-workflow.json` | Helper workflow for automated slot creation |
+| `n8n-sdlc/docs/SDLC-Reference.md` | Full framework documentation (moved from root README) |
 
 ## GitHub Issue Linking
 

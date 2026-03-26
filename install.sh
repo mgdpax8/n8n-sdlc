@@ -281,10 +281,52 @@ install_rules "$TARGET"
 install_claude_commands "$TARGET"
 install_sdlc_folder "$TARGET"
 
-# Copy CLAUDE.md for Claude Code compatibility
+# Merge n8n-sdlc section into CLAUDE.md (preserve user content)
 if [[ -f "$SCRIPT_DIR/CLAUDE.md" ]]; then
     log_info "Claude Code config (CLAUDE.md)"
-    copy_file "$SCRIPT_DIR/CLAUDE.md" "$TARGET/CLAUDE.md" "CLAUDE.md"
+    local_claude="$TARGET/CLAUDE.md"
+    sdlc_start="<!-- n8n-sdlc:start -->"
+    sdlc_end="<!-- n8n-sdlc:end -->"
+
+    if $DRY_RUN; then
+        if [[ ! -f "$local_claude" ]]; then
+            log_dry "would create: CLAUDE.md (with n8n-sdlc section)"
+            ((COPIED++)) || true
+        elif grep -q "$sdlc_start" "$local_claude" 2>/dev/null; then
+            log_dry "would update: CLAUDE.md (replace n8n-sdlc section)"
+            ((UPDATED++)) || true
+        else
+            log_dry "would append: CLAUDE.md (add n8n-sdlc section)"
+            ((UPDATED++)) || true
+        fi
+    else
+        sdlc_block="$sdlc_start
+$(cat "$SCRIPT_DIR/CLAUDE.md")
+$sdlc_end"
+
+        if [[ ! -f "$local_claude" ]]; then
+            # No existing CLAUDE.md — create with n8n-sdlc section
+            echo "$sdlc_block" > "$local_claude"
+            log_ok "created: CLAUDE.md (with n8n-sdlc section)"
+            ((COPIED++)) || true
+        elif grep -q "$sdlc_start" "$local_claude" 2>/dev/null; then
+            # Existing CLAUDE.md has n8n-sdlc section — replace it in-place
+            # Use awk to replace everything between markers (inclusive)
+            awk -v start="$sdlc_start" -v end="$sdlc_end" -v block="$sdlc_block" '
+                $0 == start { printing=0; print block; next }
+                $0 == end   { printing=1; next }
+                printing!=0 { print }
+                BEGIN       { printing=1 }
+            ' "$local_claude" > "${local_claude}.tmp" && mv "${local_claude}.tmp" "$local_claude"
+            log_ok "updated: CLAUDE.md (replaced n8n-sdlc section)"
+            ((UPDATED++)) || true
+        else
+            # Existing CLAUDE.md without n8n-sdlc section — append
+            printf '\n\n%s\n' "$sdlc_block" >> "$local_claude"
+            log_ok "updated: CLAUDE.md (appended n8n-sdlc section)"
+            ((UPDATED++)) || true
+        fi
+    fi
 fi
 
 write_sdlc_version "$TARGET"
