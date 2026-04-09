@@ -127,6 +127,17 @@ jobs:
 
           exit $exit_code
 
+  script-tests:
+    name: Script Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run n8n-sdlc script tests
+        run: node --test n8n-sdlc/scripts/__tests__/*.test.mjs
+
   branch-policy:
     name: Branch Policy
     runs-on: ubuntu-latest

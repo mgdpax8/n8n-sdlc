@@ -26,275 +26,45 @@ Ensures all prerequisites are met before performing operations that could affect
 
 ## Validation Checks
 
-### Level 1: Configuration Validation
+Run the deterministic validation script:
 
-**Check 1.1: project.json exists**
-
-```
-Path: n8n-sdlc/config/project.json
-Required: Yes
-
-If missing:
-  ❌ FAIL: n8n-sdlc/config/project.json not found
-  Fix: Run the "get started" skill to initialize the project
+```bash
+node n8n-sdlc/scripts/validate-config.mjs \
+  --config n8n-sdlc/config/project.json \
+  --mappings n8n-sdlc/config/id-mappings.json \
+  --level {level} \
+  [--workflow "{workflowFilePath}"] \
+  [--direction promote|seed]
 ```
 
-**Check 1.2: project.json is valid**
-
-```
-Required fields:
-- n8nProjectId (non-empty string; from workflow URL projectId=...; locks MCP to this project)
-- naming.devPrefix (typically "DEV-"; from n8n-sdlc/config/project.json)
-
-If invalid:
-  ❌ FAIL: project.json missing required field: {fieldName}
-  Fix: Add the missing field to n8n-sdlc/config/project.json
-```
-
-**Check 1.3: id-mappings.json exists (for push/promote)**
-
-```
-Path: n8n-sdlc/config/id-mappings.json
-Required: For push and promote operations
-
-If missing:
-  ❌ FAIL: n8n-sdlc/config/id-mappings.json not found
-  Fix: Run the "get started" skill to create the file
-```
-
-**Check 1.4: Workflow in configured project (when validating workflow from n8n)**
-
-```
-When the workflow was fetched from n8n (n8n_get_workflow with mode: "full"):
-Compare data.shared[0].projectId to n8n-sdlc/config/project.json n8nProjectId.
-
-If they do not match:
-  ❌ FAIL: Workflow is not in the configured project
-  The workflow belongs to a different n8n project. Only workflows in the locked project (n8nProjectId) may be used.
-  Fix: Use a workflow from the correct project, or update n8nProjectId in project.json if you intend to use this project.
-```
-
-**Check 1.5: project.json structural validation**
-
-```
-Read n8n-sdlc/config/project.schema.json and validate project.json against it:
-
-Required fields:
-- n8nProjectId: non-empty string
-- naming: object containing devPrefix (string)
-- version: string
-
-Type validation (when present):
-- projectName, workflowsDir, discoveryMode, masterWorkflowId: string
-- folderStrategy, tags, credentials, git, slotCreator: object
-
-Enum validation (when present):
-- discoveryMode must be one of: "master", "full-project"
-- folderStrategy.mode must be one of: "flat", "categorized"
-- folderStrategy.dedicatedTools must be one of: "flat", "grouped", "alongside"
-
-No unknown top-level keys allowed (schema has additionalProperties: false).
-
-If invalid:
-  ❌ FAIL: project.json schema violation: {specific issue}
-  Fix: Correct the field in n8n-sdlc/config/project.json per the schema
-```
-
-**Check 1.6: id-mappings.json structural validation**
-
-```
-Read n8n-sdlc/config/id-mappings.schema.json and validate id-mappings.json against it:
-
-Required fields:
-- workflows: object
-- metadata: object containing projectName (string), createdAt (string), lastModified (string)
-
-Each workflow entry must have:
-- type: one of "agent", "tool"
-- localPath: string
-- dev: object with id (string or null) and status (string)
-- prod: object with id (string or null) and status (string)
-
-Status enum validation:
-- dev.status and prod.status must be one of: "active", "reserved", "needs-slot", "not-started"
-
-externalDependencies entries (when present):
-- id: string
-- referencedBy: array of strings
-
-reservedSlots entries (when present):
-- id: string
-
-No unknown top-level keys allowed.
-
-If invalid:
-  ❌ FAIL: id-mappings.json schema violation: {specific issue}
-  Fix: Correct the field in n8n-sdlc/config/id-mappings.json per the schema
-```
-
-**Check 1.7: Cross-file consistency**
-
-```
-Validate consistency between project.json and id-mappings.json:
-
-1. metadata.projectName in id-mappings.json must match projectName
-   in project.json (if both are set and non-empty)
-
-2. All workflows with dev.status "active" must have a non-null dev.id
-
-3. All workflows with prod.status "active" must have a non-null prod.id
-
-4. No duplicate IDs across all dev.id values (excluding null)
-
-5. No duplicate IDs across all prod.id values (excluding null)
-
-6. No ID appears as both a dev.id and a prod.id of different workflows
-
-If invalid:
-  ❌ FAIL: Cross-file consistency error: {specific issue}
-  Fix: {specific fix instruction}
-```
-
-### Level 2: Naming Convention Validation
-
-**Check 2.1: Workflow name follows pattern**
-
-```
-Expected pattern:
-- DEV: name starts with devPrefix (from n8n-sdlc/config/project.json naming.devPrefix, typically "DEV-")
-- PROD: plain name with no prefix
-
-Examples (with devPrefix "DEV-"):
-  ✓ DEV-Support Agent
-  ✓ DEV-List Invoices
-  ✓ Support Agent
-  ✓ List Invoices
-  ✗ DEVSupport Agent (missing hyphen after DEV)
-  ✗ dev-Support Agent (wrong case; must match devPrefix exactly)
-
-Logical name extraction (for id-mappings lookup):
-- If name starts with devPrefix: logicalName = name.slice(devPrefix.length)
-- Else: logicalName = name
-
-If invalid:
-  ❌ FAIL: Workflow name "{name}" does not follow convention
-  Expected: DEV workflows start with "{devPrefix}", PROD workflows use plain name
-  Fix: Rename workflow to follow the pattern
-```
-
-**Check 2.2: Environment determination**
-
-```
-- Name starts with devPrefix (e.g., "DEV-") → Development environment
-- Otherwise → Production environment
-
-No "unknown prefix" error. All names are either dev or prod.
-```
-
-### Level 3: ID Mapping Validation
-
-**Check 3.1: Workflow exists in mappings**
-
-```
-Extract logical name from full workflow name:
-- If name starts with devPrefix: logicalName = name.slice(devPrefix.length)
-- Else: logicalName = name
-
-Look up logicalName in id-mappings.json workflows
-
-If not found:
-  ❌ FAIL: Workflow "{logicalName}" not found in id-mappings.json
-  Fix: Run "n8n-sdlc-reserve-workflows" to add this workflow
-```
-
-**Check 3.2: localPath validation**
-
-```
-For the workflow's id-mappings entry:
-1. Verify localPath exists and is a non-empty string
-2. Verify the localPath folder exists on disk (e.g., agents/, tools/)
-3. Verify the workflow JSON file exists at {localPath}/{workflowName}.json
-
-Self-healing: If file not found at expected localPath, search workspace for {workflowName}.json
-- If found elsewhere, suggest updating localPath in id-mappings
-- If not found anywhere, fail
-
-If localPath missing or invalid:
-  ❌ FAIL: Workflow "{logicalName}" has invalid localPath
-  localPath: {localPath}
-  Fix: Update localPath in id-mappings.json to the correct folder
-
-If folder or file not found:
-  ❌ FAIL: Workflow file not found for "{logicalName}"
-  Expected: {localPath}/{workflowName}.json
-  Fix: Ensure the workflow JSON exists at the expected path, or run n8n-sdlc-pull-workflow
-```
-
-**Check 3.3: Target environment ID exists**
-
-```
-For push to DEV: Check dev.id is not null
-For push to PROD: Check prod.id is not null
-
-If null:
-  ❌ FAIL: No {env} ID mapped for "{logicalName}"
-  Current status: {status}
-  Fix: Run "n8n-sdlc-reserve-workflows" to reserve a {env} slot
-```
-
-**Check 3.4: No duplicate IDs**
-
-```
-Scan all mappings for duplicate IDs
-Each n8n ID should appear only once
-
-If duplicate:
-  ❌ FAIL: Duplicate ID found: {id}
-  Used by: {workflow1}, {workflow2}
-  Fix: Resolve the duplicate in id-mappings.json
-```
-
-### Level 4: Reference Validation (Promote Only)
-
-**Check 4.1: All workflow references have target mappings**
-
-```
-Scan workflow for:
-- @n8n/n8n-nodes-langchain.toolWorkflow nodes
-- n8n-nodes-base.executeWorkflow nodes
-
-For each workflowId found:
-1. Check if workflowId is in id-mappings workflows (by dev.id)
-   - If yes: verify prod.id is not null (in-project ref needs prod mapping for promotion)
-2. Check if workflowId is in externalDependencies
-   - If yes: no prod mapping needed (external deps are left as-is during promotion)
-3. If in neither: fail (unknown reference)
-
-External dependencies don't need prod mappings—they use the same ID in both environments.
-
-If any in-project reference unmapped:
-  ❌ FAIL: Unmapped workflow reference found
-  
-  | Node Name      | DEV ID      | PROD ID |
-  |----------------|-------------|---------|
-  | List Invoices  | abc123      | NULL ❌ |
-  
-  Fix: Run "n8n-sdlc-reserve-workflows" to reserve PROD slots for missing workflows
-```
-
-**Check 4.2: All credential mappings exist (if needed)**
-
-```
-Scan workflow for credential references
-Check if any credentials are in project.json credential mappings
-
-For mapped credentials, verify both dev and prod IDs exist
-
-If missing:
-  ⚠️ WARNING: Credential "{name}" referenced but not in mappings
-  This credential will not be transformed during promotion
-  Fix: Add credential mapping to project.json if it differs between environments
-```
+**Levels** (each includes all checks from previous levels):
+
+- `config-only` — Checks 1.1–1.7: file existence, required fields, structural
+  validation against schemas, cross-file consistency (project name match,
+  active-status-has-ID, no duplicate IDs)
+- `naming` — + Checks 2.1–2.2: workflow name follows DEV/PROD convention,
+  environment determination. Requires `--workflow`.
+- `mapping` — + Checks 3.1–3.4: workflow exists in mappings, localPath valid,
+  target environment ID exists, no duplicate IDs. Requires `--workflow`.
+- `full` — + Checks 4.1–4.2: all workflowId references have target-env
+  mappings, credential mappings complete. Requires `--workflow` and `--direction`.
+
+Parse the JSON output:
+
+- `valid`: `true` if zero failures
+- `checks`: array of `{id, name, status, message?}` — one entry per check
+- `summary`: `{pass, warn, fail}` counts
+
+**Check 1.4 (project ownership)** is still performed by the AI during
+push/promote when fetching from n8n via MCP — the script cannot call MCP.
+Compare `data.shared[0].projectId` to `n8nProjectId` after any `n8n_get_workflow`
+call with `mode: "full"`.
+
+**Check 3.2 (localPath file existence)** includes self-healing that requires
+filesystem search — the AI should still handle the "search workspace for file"
+fallback if the script reports localPath as invalid.
+
+Display the results to the user, showing failures and warnings with fix suggestions.
 
 ## Output Format
 

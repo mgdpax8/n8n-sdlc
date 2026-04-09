@@ -1,0 +1,54 @@
+{
+  "name": "DEV-Support Agent",
+  "id": "dev-agent-001",
+  "nodes": [
+    {
+      "id": "node-1",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "parameters": {},
+      "position": [0, 0]
+    },
+    {
+      "id": "node-2",
+      "name": "List Invoices",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "parameters": {
+        "description": "Lists invoices",
+        "workflowId": {
+          "__rl": true,
+          "value": "dev-tool-001",
+          "mode": "id"
+        }
+      },
+      "position": [200, 0]
+    },
+    {
+      "id": "node-3",
+      "name": "Get Totals",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "dev-tool-002",
+          "mode": "id"
+        }
+      },
+      "position": [200, 200]
+    }
+  ],
+  "connections": {
+    "AI Agent": {
+      "main": [
+        [{ "node": "List Invoices", "type": "main", "index": 0 }],
+        [{ "node": "Get Totals", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "pinData": {
+    "AI Agent": [{ "json": { "test": true } }]
+  },
+  "settings": {},
+  "active": false,
+  "tags": [{ "name": "dev" }]
+}

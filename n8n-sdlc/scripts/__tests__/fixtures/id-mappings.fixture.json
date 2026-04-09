@@ -1,0 +1,60 @@
+{
+  "workflows": {
+    "Support Agent": {
+      "type": "agent",
+      "localPath": "agents/",
+      "dev": { "id": "dev-agent-001", "status": "active" },
+      "prod": { "id": "prod-agent-001", "status": "active" }
+    },
+    "List Invoices": {
+      "type": "tool",
+      "localPath": "tools/",
+      "dev": { "id": "dev-tool-001", "status": "active" },
+      "prod": { "id": "prod-tool-001", "status": "active" }
+    },
+    "Get Totals": {
+      "type": "tool",
+      "localPath": "tools/",
+      "dev": { "id": "dev-tool-002", "status": "active" },
+      "prod": { "id": "prod-tool-002", "status": "active" }
+    },
+    "Simple Utility": {
+      "type": "tool",
+      "localPath": "tools/",
+      "dev": { "id": "dev-util-001", "status": "active" },
+      "prod": { "id": "prod-util-001", "status": "active" }
+    },
+    "Slack Notifier": {
+      "type": "tool",
+      "localPath": "tools/",
+      "dev": { "id": "dev-slack-001", "status": "active" },
+      "prod": { "id": "prod-slack-001", "status": "active" }
+    },
+    "Agent With List Mode": {
+      "type": "agent",
+      "localPath": "agents/",
+      "dev": { "id": "dev-agent-002", "status": "active" },
+      "prod": { "id": "prod-agent-002", "status": "active" }
+    },
+    "No Prod Yet": {
+      "type": "tool",
+      "localPath": "tools/",
+      "dev": { "id": "dev-noprod-001", "status": "active" },
+      "prod": { "id": null, "status": "needs-slot" }
+    }
+  },
+  "externalDependencies": {
+    "Shared Lookup Tool": {
+      "id": "ext-tool-001",
+      "referencedBy": ["Support Agent"],
+      "note": "External tool in another project"
+    }
+  },
+  "reservedSlots": [],
+  "metadata": {
+    "projectName": "Test Project",
+    "createdAt": "2026-01-01T00:00:00Z",
+    "lastModified": "2026-03-01T00:00:00Z",
+    "seedOrder": ["List Invoices", "Get Totals", "Support Agent"]
+  }
+}
