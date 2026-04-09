@@ -1,0 +1,51 @@
+{
+  "name": "DEV-Slack Notifier",
+  "id": "dev-slack-001",
+  "nodes": [
+    {
+      "id": "node-1",
+      "name": "Slack Send",
+      "type": "n8n-nodes-base.slack",
+      "parameters": {
+        "channel": "#general",
+        "text": "Hello"
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "cred-slack-dev",
+          "name": "Slack Dev"
+        }
+      },
+      "position": [0, 0]
+    },
+    {
+      "id": "node-2",
+      "name": "OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "parameters": {},
+      "credentials": {
+        "azureOpenAiApi": {
+          "id": "cred-openai-dev",
+          "name": "Azure OpenAI Dev"
+        }
+      },
+      "position": [200, 0]
+    },
+    {
+      "id": "node-3",
+      "name": "Unmapped Cred",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {},
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "cred-unmapped",
+          "name": "Some Header Auth"
+        }
+      },
+      "position": [400, 0]
+    }
+  ],
+  "connections": {},
+  "settings": {},
+  "active": false
+}

@@ -1,0 +1,25 @@
+{
+  "name": "DEV-Agent With List Mode",
+  "id": "dev-agent-002",
+  "nodes": [
+    {
+      "id": "node-1",
+      "name": "Tool With Cache",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "parameters": {
+        "description": "Calls tool via list mode",
+        "workflowId": {
+          "__rl": true,
+          "value": "dev-tool-001",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/dev-tool-001",
+          "cachedResultName": "DEV-List Invoices"
+        }
+      },
+      "position": [0, 0]
+    }
+  ],
+  "connections": {},
+  "settings": {},
+  "active": false
+}
