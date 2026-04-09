@@ -98,34 +98,25 @@ To promote this workflow, you first need to reserve a PROD slot.
 Run the "n8n-sdlc-reserve-workflows" skill to create and claim a PROD slot.
 ```
 
-### Step 4: Scan for Workflow References
+### Step 4: Scan and Verify Workflow References
 
-Find all `workflowId` references in the DEV workflow:
+Run the deterministic reference scanner:
 
-```
-Search nodes for:
-- type: "@n8n/n8n-nodes-langchain.toolWorkflow"
-- type: "n8n-nodes-base.executeWorkflow"
-
-Extract each workflowId.value
+```bash
+node n8n-sdlc/scripts/scan-refs.mjs \
+  --workflow "{devFilePath}" \
+  --mappings n8n-sdlc/config/id-mappings.json
 ```
 
-### Step 5: Verify All References Are Mapped
+Parse the JSON output and check `summary`:
 
-For each found workflow ID:
-
-```
-1. Check if the ID exists in id-mappings.json workflows (search all entries' dev.id)
-   -> If found: in-project reference; verify prod.id is not null
-2. Check if the ID exists in id-mappings.json externalDependencies (search by id)
-   -> If found: external reference; leave untouched (same ID for DEV and PROD)
-3. If NOT found in workflows OR externalDependencies:
-   -> ERROR: unmapped reference
-```
+- If `summary.unmapped > 0`: show the unmapped references and **STOP**
+- For each `in-project` reference, verify the workflow has a `prod.id` in id-mappings.json
+- `external` references are fine — they use the same ID in both environments
 
 **If any in-project reference lacks a PROD mapping:**
 
-```
+```text
 ERROR: Cannot promote - missing PROD mappings
 
 The following workflow references need PROD IDs:
@@ -133,24 +124,11 @@ The following workflow references need PROD IDs:
 | DEV ID          | Workflow Name   | PROD ID |
 |-----------------|-----------------|---------|
 | pnfqaPMDG9PohkBi| List Invoices   | NULL    |
-| abc123          | Get Totals      | NULL    |
 
 Run "n8n-sdlc-reserve-workflows" to create PROD slots for these workflows first.
 ```
 
-**If any reference is unmapped (not in workflows or externalDependencies):**
-
-```
-ERROR: Unmapped workflow reference
-
-The workflow references workflow ID "unknown-id-123" which is not in:
-- workflows (in-project)
-- externalDependencies (external)
-
-Add this workflow to id-mappings.json before promoting.
-```
-
-**STOP promotion if any mapping is missing or unmapped.**
+**STOP promotion if any reference is unmapped or missing a PROD ID.**
 
 ### Step 6: Build Transformation Report
 
@@ -235,65 +213,23 @@ Type "confirm" to proceed, or anything else to cancel.
 
 ### Step 10: Perform Transformations
 
-Execute the transformation algorithm:
+Run the deterministic transformation script:
 
-```javascript
-// 1. Clone the DEV workflow
-prodWorkflow = deepClone(devWorkflow)
-
-// 2. Transform workflow name: strip devPrefix (not replace with PROD-)
-devPrefix = projectJson.naming.devPrefix  // e.g., "DEV-"
-prodWorkflow.name = devWorkflow.name.startsWith(devPrefix)
-  ? devWorkflow.name.slice(devPrefix.length)
-  : devWorkflow.name
-
-// 3. Transform workflow ID
-prodWorkflow.id = idMappings[logicalName].prod.id
-
-// 4. Strip pinData (prevent test data leaking to PROD)
-prodWorkflow.pinData = {}
-
-// 5. Transform workflowId references (in-project only; external refs unchanged)
-for (node of prodWorkflow.nodes) {
-  if (isWorkflowReferenceNode(node)) {
-    refId = node.parameters.workflowId.value
-
-    // Check if external dependency - leave untouched
-    if (isInExternalDependencies(refId)) {
-      continue  // same ID serves both DEV and PROD
-    }
-
-    // In-project: transform to PROD ID
-    mappingEntry = findMappingByDevId(refId)
-    node.parameters.workflowId.value = mappingEntry.prod.id
-
-    // Strip cached list-mode metadata (n8n will re-populate)
-    if (node.parameters.workflowId.cachedResultUrl) {
-      delete node.parameters.workflowId.cachedResultUrl
-    }
-    if (node.parameters.workflowId.cachedResultName) {
-      delete node.parameters.workflowId.cachedResultName
-    }
-  }
-}
-
-// 6. Transform credential IDs (if mapped in project.json)
-for (node of prodWorkflow.nodes) {
-  if (node.credentials) {
-    for (credType of Object.keys(node.credentials)) {
-      credId = node.credentials[credType].id
-      for (alias of Object.keys(projectJson.credentials)) {
-        if (projectJson.credentials[alias].dev === credId) {
-          node.credentials[credType].id = projectJson.credentials[alias].prod
-        }
-      }
-    }
-  }
-}
-
-// 7. Update tags (optional)
-prodWorkflow.tags = updateTagsForProd(prodWorkflow.tags)
+```bash
+node n8n-sdlc/scripts/transform.mjs \
+  --direction promote \
+  --workflow "{logicalName}" \
+  --source "{devFilePath}" \
+  --mappings n8n-sdlc/config/id-mappings.json \
+  --config n8n-sdlc/config/project.json
 ```
+
+Parse the JSON output:
+
+- If `success` is `false`: show `errors` to user and **STOP**
+- If `success` is `true`: use `workflow` from output for the MCP push
+- Show `report` to user in the transformation report (name change, ID swap,
+  references transformed, credentials mapped, fields stripped)
 
 ### Step 11: Push to PROD via MCP
 

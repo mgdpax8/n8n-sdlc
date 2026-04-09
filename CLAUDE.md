@@ -77,6 +77,12 @@ Each command reads the corresponding SKILL.md before executing. In Claude Code, 
 | `n8n-sdlc/config/id-mappings.json` | Workflow ID mappings (dev/prod pairs) |
 | `.cursor/rules/n8n-sdlc.md` | Full rules and conventions reference |
 | `.cursor/rules/n8n-sdlc-workflow-structure.md` | JSON transformation reference for promote/seed |
+| `n8n-sdlc/scripts/transform.mjs` | Deterministic promote/seed transformation engine |
+| `n8n-sdlc/scripts/scan-refs.mjs` | Workflow reference scanner and classifier |
+| `n8n-sdlc/scripts/build-graph.mjs` | Dependency graph, seed order, Mermaid diagrams |
+| `n8n-sdlc/scripts/validate-config.mjs` | Config and reference validation (4 levels) |
+| `n8n-sdlc/scripts/lib/` | Shared constants and mapping utilities |
+| `n8n-sdlc/scripts/__tests__/` | Script unit tests (node:test) |
 | `n8n-sdlc/helpers/slot-creator-workflow.json` | Helper workflow for automated slot creation |
 | `n8n-sdlc/docs/SDLC-Reference.md` | Full framework documentation (moved from root README) |
 

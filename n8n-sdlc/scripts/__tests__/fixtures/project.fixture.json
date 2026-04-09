@@ -1,0 +1,27 @@
+{
+  "projectName": "Test Project",
+  "n8nProjectId": "project-123",
+  "version": "1.0.0",
+  "naming": {
+    "devPrefix": "DEV-"
+  },
+  "credentials": {
+    "Slack": {
+      "dev": "cred-slack-dev",
+      "prod": "cred-slack-prod"
+    },
+    "Azure OpenAI": {
+      "dev": "cred-openai-dev",
+      "prod": "cred-openai-prod"
+    }
+  },
+  "tags": {
+    "dev": ["dev"],
+    "prod": ["production"]
+  },
+  "git": {
+    "enabled": true,
+    "devBranch": "dev",
+    "mainBranch": "main"
+  }
+}

@@ -63,43 +63,18 @@ with whatever checks are still possible.
 
 ### Step 2: Category 1 — Configuration Health
 
-Run the same checks as validate-workflow Level 1. This is a reuse,
-not a delegation — doctor performs the checks inline so the full
-report stays in one place.
+Run the deterministic validation script at `config-only` level:
 
-```text
-Check 1.1: project.json exists
-  Path: n8n-sdlc/config/project.json
-  If missing: ❌ project.json not found. Run "get started" to initialize.
-
-Check 1.2: project.json schema validation
-  Read n8n-sdlc/config/project.schema.json.
-  Validate project.json against it.
-  Required fields: n8nProjectId (non-empty string), naming.devPrefix (string), version (string).
-  If invalid: ❌ project.json schema violation: {detail}
-
-Check 1.3: id-mappings.json exists
-  Path: n8n-sdlc/config/id-mappings.json
-  If missing: ❌ id-mappings.json not found. Run "get started" to create it.
-
-Check 1.4: id-mappings.json schema validation
-  Read n8n-sdlc/config/id-mappings.schema.json.
-  Validate id-mappings.json against it.
-  Required: workflows (object), metadata (projectName, createdAt, lastModified).
-  Each workflow entry: type (agent|tool), localPath (string),
-    dev (id + status), prod (id + status).
-  Status enum: active, reserved, needs-slot, not-started.
-  If invalid: ❌ id-mappings.json schema violation: {detail}
-
-Check 1.5: Cross-file consistency
-  a) metadata.projectName matches project.json projectName (if both set)
-  b) All workflows with dev.status "active" have non-null dev.id
-  c) All workflows with prod.status "active" have non-null prod.id
-  d) No duplicate IDs across all dev.id values (excluding null)
-  e) No duplicate IDs across all prod.id values (excluding null)
-  f) No ID appears as both a dev.id and a prod.id of different workflows
-  If any fail: ❌ Cross-file consistency error: {detail}
+```bash
+node n8n-sdlc/scripts/validate-config.mjs \
+  --config n8n-sdlc/config/project.json \
+  --mappings n8n-sdlc/config/id-mappings.json \
+  --level config-only
 ```
+
+Parse the JSON output. Include each check result in the doctor report.
+If either config file is missing, the script returns specific failure checks —
+include these in the report and continue with whatever categories are possible.
 
 ### Step 3: Category 2 — MCP Connectivity
 

@@ -1,0 +1,22 @@
+{
+  "name": "DEV-Support Agent",
+  "id": "dev-agent-001",
+  "nodes": [
+    {
+      "id": "node-1",
+      "name": "No Prod Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "dev-noprod-001",
+          "mode": "id"
+        }
+      },
+      "position": [0, 0]
+    }
+  ],
+  "connections": {},
+  "settings": {},
+  "active": false
+}
